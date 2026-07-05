@@ -1,0 +1,8 @@
+# .NET build intermediates (the compiled DLL in Assemblies/ IS committed — it's what RimWorld loads)
+**/obj/
+**/bin/
+*.user
+
+# OS / editor cruft
+.DS_Store
+*.swp

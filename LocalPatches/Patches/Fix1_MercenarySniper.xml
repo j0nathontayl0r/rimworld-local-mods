@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix1: Mercenary_Sniper_Acidifier PawnKindDef — remove then re-add weaponMoney (450~600)
+       to resolve a bad/duplicate weaponMoney value. success=Always so it no-ops silently
+       if the def isn't present. -->
+  <Operation Class="PatchOperationSequence">
+    <success>Always</success>
+    <operations>
+      <li Class="PatchOperationRemove">
+        <xpath>/Defs/PawnKindDef[defName="Mercenary_Sniper_Acidifier"]/weaponMoney</xpath>
+      </li>
+      <li Class="PatchOperationAdd">
+        <xpath>/Defs/PawnKindDef[defName="Mercenary_Sniper_Acidifier"]</xpath>
+        <value>
+          <weaponMoney>450~600</weaponMoney>
+        </value>
+      </li>
+    </operations>
+  </Operation>
+</Patch>

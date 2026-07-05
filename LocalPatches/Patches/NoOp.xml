@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- NoOp: intentional empty placeholder. Keeps the Patches/ folder valid if all other patches
+       are disabled, and serves as a template for new FixN_*.xml files. Always succeeds, changes nothing. -->
+  <Operation Class="PatchOperationSequence">
+    <success>Always</success>
+    <operations />
+  </Operation>
+</Patch>

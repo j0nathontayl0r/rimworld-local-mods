@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix6: VEE_Aurora IncidentDef (from the VanillaLandmarksExpanded LOCAL mod) declared
+       <targetTags><li>World</li></targetTags>, but IncidentWorker_FrequentAurora.CanFireNowSub
+       immediately casts parms.target to Map -> InvalidCastException every storyteller tick.
+       Swap World -> Map_PlayerHome so the worker gets the Map it expects.
+       success=Always — inert unless that local mod is restored (not on this Linux install). -->
+  <Operation Class="PatchOperationSequence">
+    <success>Always</success>
+    <operations>
+      <li Class="PatchOperationRemove">
+        <xpath>/Defs/IncidentDef[defName="VEE_Aurora"]/targetTags/li[text()="World"]</xpath>
+      </li>
+      <li Class="PatchOperationAdd">
+        <xpath>/Defs/IncidentDef[defName="VEE_Aurora"]/targetTags</xpath>
+        <value>
+          <li>Map_PlayerHome</li>
+        </value>
+      </li>
+    </operations>
+  </Operation>
+</Patch>

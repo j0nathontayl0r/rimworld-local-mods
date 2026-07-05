@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix7: Black Eagles Warhammer Heresy (3505068525) melee/apothecary weapons use vanilla <Tool>
+       entries. With CE active, StatWorker_MeleeDamageAverage needs CombatExtended.ToolCE (with
+       armorPenetrationSharp/Blunt); Simple Sidearms / Animated Melee reading MeleeDamageAverage
+       otherwise logs an error whenever these are equipped/evaluated. Replace each tools block with
+       ToolCE equivalents. Wrapped in PatchOperationFindMod(Combat Extended) so it only applies with CE. -->
+  <Operation Class="PatchOperationFindMod">
+    <mods>
+      <li>Combat Extended</li>
+    </mods>
+    <match Class="PatchOperationSequence">
+      <success>Always</success>
+      <operations>
+        <!-- BEWH_AstartesPowerSword: handle (Blunt) + edge (Cut, energy blade AP 0.5) -->
+        <li Class="PatchOperationReplace">
+          <xpath>/Defs/ThingDef[defName="BEWH_AstartesPowerSword"]/tools</xpath>
+          <value>
+            <tools>
+              <li Class="CombatExtended.ToolCE">
+                <label>handle</label>
+                <capacities><li>Blunt</li></capacities>
+                <power>16</power>
+                <cooldownTime>1.5</cooldownTime>
+                <armorPenetrationBlunt>0.1</armorPenetrationBlunt>
+                <armorPenetrationSharp>0</armorPenetrationSharp>
+              </li>
+              <li Class="CombatExtended.ToolCE">
+                <label>edge</label>
+                <capacities><li>Cut</li></capacities>
+                <power>22</power>
+                <cooldownTime>2</cooldownTime>
+                <armorPenetrationSharp>0.5</armorPenetrationSharp>
+                <armorPenetrationBlunt>0</armorPenetrationBlunt>
+              </li>
+            </tools>
+          </value>
+        </li>
+        <!-- BEWH_Narthecium: gauntlet (Blunt AP 0.2) + drill (Stab, AP sharp 0.4) -->
+        <li Class="PatchOperationReplace">
+          <xpath>/Defs/ThingDef[defName="BEWH_Narthecium"]/tools</xpath>
+          <value>
+            <tools>
+              <li Class="CombatExtended.ToolCE">
+                <label>gauntlet</label>
+                <capacities><li>Blunt</li></capacities>
+                <power>20</power>
+                <cooldownTime>1.4</cooldownTime>
+                <armorPenetrationBlunt>0.2</armorPenetrationBlunt>
+                <armorPenetrationSharp>0</armorPenetrationSharp>
+              </li>
+              <li Class="CombatExtended.ToolCE">
+                <label>drill</label>
+                <capacities><li>Stab</li></capacities>
+                <power>26</power>
+                <cooldownTime>1.8</cooldownTime>
+                <armorPenetrationSharp>0.4</armorPenetrationSharp>
+                <armorPenetrationBlunt>0</armorPenetrationBlunt>
+              </li>
+            </tools>
+          </value>
+        </li>
+        <!-- BEWH_Reductor: handle (Blunt AP 0.05) + extractor drill (Stab, AP sharp 0.2) -->
+        <li Class="PatchOperationReplace">
+          <xpath>/Defs/ThingDef[defName="BEWH_Reductor"]/tools</xpath>
+          <value>
+            <tools>
+              <li Class="CombatExtended.ToolCE">
+                <label>handle</label>
+                <capacities><li>Blunt</li></capacities>
+                <power>7</power>
+                <cooldownTime>2</cooldownTime>
+                <armorPenetrationBlunt>0.05</armorPenetrationBlunt>
+                <armorPenetrationSharp>0</armorPenetrationSharp>
+              </li>
+              <li Class="CombatExtended.ToolCE">
+                <label>extractor drill</label>
+                <capacities><li>Stab</li></capacities>
+                <power>14</power>
+                <cooldownTime>2</cooldownTime>
+                <armorPenetrationSharp>0.2</armorPenetrationSharp>
+                <armorPenetrationBlunt>0</armorPenetrationBlunt>
+              </li>
+            </tools>
+          </value>
+        </li>
+      </operations>
+    </match>
+  </Operation>
+</Patch>

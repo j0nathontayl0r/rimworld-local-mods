@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix8: Altered Carbon AC_SleeveQuality and GrimWorld 40k GW_PowerArmorBypass both use
+       displayPriorityInXenotype = 505 -> duplicate-display-order config error at startup.
+       Bump GW_PowerArmorBypass to 506. Cosmetic only. -->
+  <Operation Class="PatchOperationReplace">
+    <success>Always</success>
+    <xpath>/Defs/GeneDef[defName="GW_PowerArmorBypass"]/displayPriorityInXenotype</xpath>
+    <value>
+      <displayPriorityInXenotype>506</displayPriorityInXenotype>
+    </value>
+  </Operation>
+</Patch>

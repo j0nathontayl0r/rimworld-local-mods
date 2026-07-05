@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix10: Nano Repair Tech (1447372624) defines Ogre_NanoApparelRate / Ogre_NanoWeaponsRate
+       StatDefs only in its 1.2-1.4 folders, NOT 1.6. Polyamory Beds' NanoTech compat patch makes
+       beds that reference these stats -> cross-ref errors + "defines stat base more than once".
+       Re-add the two missing stats (copied from the mod's 1.4 defs), but only if they don't already
+       exist (guards against a future NRT update re-adding them). Wrapped in FindMod(Nano Repair Tech). -->
+  <Operation Class="PatchOperationFindMod">
+    <mods>
+      <li>Nano Repair Tech</li>
+    </mods>
+    <match Class="PatchOperationConditional">
+      <xpath>/Defs/StatDef[defName="Ogre_NanoApparelRate"]</xpath>
+      <nomatch Class="PatchOperationAdd">
+        <xpath>/Defs</xpath>
+        <value>
+          <StatDef>
+            <defName>Ogre_NanoApparelRate</defName>
+            <label>Nano Tech Apparel Repair</label>
+            <description>Speed at which the Nano Tech unit repairs apparel.</description>
+            <category>Building</category>
+            <defaultBaseValue>0</defaultBaseValue>
+            <formatString>{0}%</formatString>
+            <hideAtValue>0</hideAtValue>
+            <parts>
+              <li Class="StatPart_Quality">
+                <factorLegendary>1.5</factorLegendary>
+                <factorMasterwork>1.1</factorMasterwork>
+                <factorExcellent>1.0</factorExcellent>
+                <factorGood>0.98</factorGood>
+                <factorNormal>0.97</factorNormal>
+                <factorPoor>0.85</factorPoor>
+                <factorAwful>0.8</factorAwful>
+              </li>
+            </parts>
+          </StatDef>
+          <StatDef>
+            <defName>Ogre_NanoWeaponsRate</defName>
+            <label>Nano Tech Weapons Repair</label>
+            <description>Speed at which the Nano Tech unit repairs weapons.</description>
+            <category>Building</category>
+            <defaultBaseValue>-1</defaultBaseValue>
+            <formatString>{0}%</formatString>
+            <hideAtValue>-1</hideAtValue>
+            <parts>
+              <li Class="StatPart_Quality">
+                <factorLegendary>1.5</factorLegendary>
+                <factorMasterwork>1.1</factorMasterwork>
+                <factorExcellent>1.0</factorExcellent>
+                <factorGood>0.98</factorGood>
+                <factorNormal>0.97</factorNormal>
+                <factorPoor>0.85</factorPoor>
+                <factorAwful>0.8</factorAwful>
+              </li>
+            </parts>
+          </StatDef>
+        </value>
+      </nomatch>
+    </match>
+  </Operation>
+</Patch>

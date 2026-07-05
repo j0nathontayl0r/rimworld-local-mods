@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Local Error Fixes</name>
+  <author>micro</author>
+  <packageId>local.errorfixes</packageId>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <description>Local XML patch mod that suppresses startup/log errors from workshop mods without editing the workshop files directly.
+
+Reconstructed 2026-07-05 from the recovered project spec after the original (Windows) copy was lost. Each Patches/FixN_*.xml is self-contained and wrapped so failures are silent (success=Always / PatchOperationFindMod). MUST load LAST, after every other mod (enforce placement in RimSort).</description>
+  <!-- FindMod-wrapped patches don't need order, but Replace patches need their target defs to exist first,
+       so this mod must sit at the very bottom of the load order. loadAfter listed for clarity. -->
+  <loadAfter>
+    <li>ceteam.combatextended</li>
+    <li>cabbage.rimcities</li>
+  </loadAfter>
+</ModMetaData>

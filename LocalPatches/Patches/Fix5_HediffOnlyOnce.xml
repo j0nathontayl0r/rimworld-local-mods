@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix5: HediffGiverSetDef[MechanoidHediffGivers] carried an <onlyOnce> element that logged a
+       config error. Strip it. success=Always — inert if the defining mod isn't installed
+       (it currently isn't on this Linux install). -->
+  <Operation Class="PatchOperationRemove">
+    <success>Always</success>
+    <xpath>/Defs/HediffGiverSetDef[defName="MechanoidHediffGivers"]//onlyOnce</xpath>
+  </Operation>
+</Patch>

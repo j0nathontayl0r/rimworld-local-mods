@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix4: RimCities (cabbage.rimcities) City_Emplacements gen step gets a Turret_M240B option
+       injected by its CE compat patch, but that turret isn't resolvable as a cross-ref target here,
+       spamming a cross-reference error at map gen. Remove the offending option.
+       success=Always so it's silent when CE (and hence the M240B option) isn't active. -->
+  <Operation Class="PatchOperationRemove">
+    <success>Always</success>
+    <xpath>/Defs/GenStepDef[defName="City_Emplacements"]/genStep/options/li[weaponDef="Turret_M240B"]</xpath>
+  </Operation>
+</Patch>

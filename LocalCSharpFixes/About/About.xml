@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Local C# Fixes</name>
+  <author>micro</author>
+  <packageId>local.csharpfixes</packageId>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>brrainz.harmony</packageId>
+      <displayName>Harmony</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>brrainz.harmony</li>
+  </loadAfter>
+  <description>Local Harmony patch mod that suppresses NREs / log spam and fixes small runtime bugs from workshop mods where an XML patch can't reach.
+
+Reconstructed 2026-07-05 from the recovered project spec after the original (Windows) copy was lost. MUST load LAST, after every other mod (enforce placement in RimSort). Compiled on Linux against RimWorldLinux_Data/Managed via dotnet-sdk.</description>
+</ModMetaData>
