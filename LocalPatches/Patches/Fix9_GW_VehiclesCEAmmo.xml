@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Patch>
-  <!-- Fix9: GrimWorld 40,000 - Angels of Death (3119816857) vehicle turret ThingDefs reference
-       *NonCE ammo ThingDefs (e.g. GW_HeavyBolterNonCE) that only exist WITHOUT CE. With CE active
-       those defs are absent -> ~30 turrets log "ammunition is non-null but no defs available".
-       When CE is active, strip the ammo fields from every ThingDef whose ammunition points at a
-       NonCE thingDef. Order matters: remove chargePerAmmoCount + genericAmmo FIRST (while the
-       [ammunition/.../NonCE] predicate still matches), then remove ammunition LAST. -->
+  <!-- Fix9: GrimWorld 40,000 - Angels of Death (3119816857) vehicle turrets reference *NonCE ammo
+       ThingDefs (e.g. GW_HeavyBolterNonCE) that only exist WITHOUT CE. With CE active those defs are
+       absent -> "Could not resolve cross-reference to Verse.ThingDef named GW_*NonCE" on ~35 defs.
+       The defs are a MIX of types: mostly <Vehicles.VehicleTurretDef> (29) plus a few <ThingDef> (6),
+       so the predicate matches /Defs/* (any def), NOT just /Defs/ThingDef. When CE is active, strip
+       the ammo fields from every def whose ammunition points at a NonCE thingDef. Order matters:
+       remove chargePerAmmoCount + genericAmmo FIRST (while the [ammunition/.../NonCE] predicate still
+       matches), then remove ammunition LAST. -->
   <Operation Class="PatchOperationFindMod">
     <mods>
       <li>Combat Extended</li>
@@ -15,15 +17,15 @@
       <operations>
         <li Class="PatchOperationRemove">
           <success>Always</success>
-          <xpath>/Defs/ThingDef[ammunition/thingDefs/li[contains(text(),'NonCE')]]/chargePerAmmoCount</xpath>
+          <xpath>/Defs/*[ammunition/thingDefs/li[contains(text(),'NonCE')]]/chargePerAmmoCount</xpath>
         </li>
         <li Class="PatchOperationRemove">
           <success>Always</success>
-          <xpath>/Defs/ThingDef[ammunition/thingDefs/li[contains(text(),'NonCE')]]/genericAmmo</xpath>
+          <xpath>/Defs/*[ammunition/thingDefs/li[contains(text(),'NonCE')]]/genericAmmo</xpath>
         </li>
         <li Class="PatchOperationRemove">
           <success>Always</success>
-          <xpath>/Defs/ThingDef[ammunition/thingDefs/li[contains(text(),'NonCE')]]/ammunition</xpath>
+          <xpath>/Defs/*[ammunition/thingDefs/li[contains(text(),'NonCE')]]/ammunition</xpath>
         </li>
       </operations>
     </match>
