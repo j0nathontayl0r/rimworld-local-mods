@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix11: "Buffs 'n Nerfs for the Generic Ammo Experience" (WhoUp.TweakingThey.BalanceRn) neutralizes
+       VFE Security's VFES_Turret_MilitaryTurret, so it's no longer a resolvable ThingDef. Faction/
+       settlement defs (e.g. Empire/Outlanders from Vanilla Factions Expanded) still list it in their
+       <allowedTurretsDefs> -> 13x "Could not resolve cross-reference to Verse.ThingDef named
+       VFES_Turret_MilitaryTurret (wanter=allowedTurretsDefs)". The <li> carries a MayRequire on VFE
+       Security (which IS active), so it isn't stripped automatically. Remove every allowedTurretsDefs
+       entry pointing at the removed turret. Loads last, so it runs after the balance mod's patch.
+       success=Always so it's silent if a future update resurrects the turret or drops the refs. -->
+  <Operation Class="PatchOperationRemove">
+    <success>Always</success>
+    <xpath>/Defs//allowedTurretsDefs/li[text()="VFES_Turret_MilitaryTurret"]</xpath>
+  </Operation>
+</Patch>
