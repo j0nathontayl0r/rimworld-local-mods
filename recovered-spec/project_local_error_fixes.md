@@ -49,6 +49,11 @@ A separate local Harmony patch mod for bugs where source isn't available or can'
 **Build command:** `dotnet build Source\LocalCSharpFixes.csproj -c Release /p:FrameworkPathOverride="C:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64_Data\Managed"`  
 **Rule:** Only troubleshoot/fix 1.6 source. If a mod only has pre-1.6 source, use this Harmony patch approach instead of recompiling.
 
+### RimDark 40k Framework — ArtificialPartsAffinity per-frame stat spam — FIXED (2026-07-26)
+**Mod:** RimDark 40k - Framework (3267464767), `Core40k.ArtificialPartsAffinity`
+**Bug:** Postfix on `PawnCapacityUtility.CalculatePartEfficiency` calls `GetStatValue(BEWH_ArtificialPartsAffinityFactor, cacheStaleAfterTicks: -1)` — a full uncached stat evaluation per body part per capacity recalc. DPA measured ~2.3ms avg/frame, 36ms spikes. For pawns without the 40k affinity the factor is 1 and it's all wasted work.
+**Fix:** `GrimWorld40k_Fixes.cs` — unpatches their postfix and installs an equivalent one that reads the stat through vanilla's 120-tick stat cache and early-outs at factor==1. Cosmetic difference: no duplicate capacity-impactor row at factor 1. Resolves the mod's type by name; skips cleanly if the mod is absent.
+
 ### VSIE — GetChairFor out-of-bounds (2026-05-14)
 **Mod:** Vanilla Social Interactions Expanded (2439736083) — source only up to 1.4, not recompilable against 1.6.  
 **Bug:** `GatheringWorker_MealTogether.GetChairFor` called `ClosestThingReachable(food.Position, ...)` without checking `food.Spawned` first. Food found in pawn inventory is not spawned, so `food.Position = IntVec3.Invalid (-1000,-1000,-1000)`, triggering the out-of-bounds log error every meal-together tick.  
@@ -83,6 +88,7 @@ Two classes of reservation spam, both harmless:
 ### Gene category duplicate displayPriorityInXenotype — FIXED (2026-05-16)
 **Mods:** Altered Carbon (2196278117) `AC_SleeveQuality` and GrimWorld 40k (3119805903) `GW_PowerArmorBypass` both use `displayPriorityInXenotype = 505` → startup config error about duplicate display order.  
 **Fix:** `Fix8_GeneDisplayPriority.xml` in LocalPatches — patches `GW_PowerArmorBypass` to 506. Cosmetic only.
+**Updated 2026-07-26:** GW_PowerArmorBypass is a `GeneCategoryDef` in current GrimWorld 40k — the original `GeneDef` xpath silently matched nothing (`success=Always`), so the error had returned. Xpath corrected.
 
 ### Vanilla — StorageSettings.CopyFrom null guard for uninitialised frames — FIXED (2026-05-17)
 **Bug:** `Frame.CompleteConstruction` calls `StorageSettings.CopyFrom(frame.storageSettings)`. If the frame never initialised its `StorageSettings` (e.g. `RefineryLoadingBay` and similar buildings), `other` is null → NRE, job driver crashes, building can never be completed by a mechanoid (functional bug, not just log noise).  

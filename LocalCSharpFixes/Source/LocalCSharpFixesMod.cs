@@ -28,6 +28,8 @@ namespace LocalCSharpFixes
             TryFinalizer(h, "ReinforcedMechanoids.TrooperStorage", "PreApplyDamage",
                       nameof(ThirdPartyPatches.RM_PreApplyDamage_Finalizer));
 
+            GrimWorld40kFixes.Apply(h);
+
             Log.Message("[LocalCSharpFixes] Harmony patches applied.");
         }
 
