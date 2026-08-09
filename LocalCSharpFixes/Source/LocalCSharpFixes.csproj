@@ -20,25 +20,46 @@
     <Deterministic>true</Deterministic>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
 
-    <!-- Build net472 on Linux WITHOUT the targeting pack: point the framework path at RimWorld's
-         bundled mono BCL and supply mscorlib/System ourselves. -->
+    <!-- Build net472 WITHOUT the targeting pack: point the framework path at RimWorld's bundled
+         mono BCL and supply mscorlib/System ourselves. Paths are selected per-OS so the same
+         project builds on both the Windows box and the Linux one. MSBuild accepts forward slashes
+         on Windows, so the HintPaths below need no separator handling. -->
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-    <RimManaged>/mnt/games/SteamLibrary/steamapps/common/RimWorld/RimWorldLinux_Data/Managed</RimManaged>
-    <HarmonyDll>/mnt/games/SteamLibrary/steamapps/workshop/content/294100/2009463077/Current/Assemblies/0Harmony.dll</HarmonyDll>
+    <SteamRoot Condition="'$(OS)' == 'Windows_NT'">C:/Program Files (x86)/Steam/steamapps</SteamRoot>
+    <SteamRoot Condition="'$(OS)' != 'Windows_NT'">/mnt/games/SteamLibrary/steamapps</SteamRoot>
+    <RimDataDir Condition="'$(OS)' == 'Windows_NT'">RimWorldWin64_Data</RimDataDir>
+    <RimDataDir Condition="'$(OS)' != 'Windows_NT'">RimWorldLinux_Data</RimDataDir>
+    <RimManaged>$(SteamRoot)/common/RimWorld/$(RimDataDir)/Managed</RimManaged>
+    <HarmonyDll>$(SteamRoot)/workshop/content/294100/2009463077/Current/Assemblies/0Harmony.dll</HarmonyDll>
     <FrameworkPathOverride>$(RimManaged)</FrameworkPathOverride>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Base class library from RimWorld's Managed folder -->
+    <!-- Base class library from RimWorld's Managed folder. netstandard.dll is required even though
+         nothing references it directly: Unity's assemblies type-forward through it, so without it
+         the compiler cannot resolve ValueType for calls like Mathf.Clamp01 (error CS0012). -->
     <Reference Include="mscorlib">     <HintPath>$(RimManaged)/mscorlib.dll</HintPath>     <Private>false</Private></Reference>
     <Reference Include="System">       <HintPath>$(RimManaged)/System.dll</HintPath>       <Private>false</Private></Reference>
     <Reference Include="System.Core">  <HintPath>$(RimManaged)/System.Core.dll</HintPath>  <Private>false</Private></Reference>
     <Reference Include="System.Xml">   <HintPath>$(RimManaged)/System.Xml.dll</HintPath>   <Private>false</Private></Reference>
+    <Reference Include="netstandard">  <HintPath>$(RimManaged)/netstandard.dll</HintPath>  <Private>false</Private></Reference>
     <!-- RimWorld + Unity + Harmony -->
     <Reference Include="Assembly-CSharp">        <HintPath>$(RimManaged)/Assembly-CSharp.dll</HintPath>        <Private>false</Private></Reference>
     <Reference Include="UnityEngine.CoreModule"> <HintPath>$(RimManaged)/UnityEngine.CoreModule.dll</HintPath> <Private>false</Private></Reference>
     <Reference Include="UnityEngine">            <HintPath>$(RimManaged)/UnityEngine.dll</HintPath>            <Private>false</Private></Reference>
     <Reference Include="0Harmony">               <HintPath>$(HarmonyDll)</HintPath>                            <Private>false</Private></Reference>
   </ItemGroup>
+
+  <!-- Nothing may be copied next to our DLL. Every reference above is supplied by RimWorld at
+       runtime, so the correct copy-local set is empty. Private=false covers the primary references
+       but NOT their transitive dependencies: RAR resolves mscorlib as a dependency of
+       Assembly-CSharp and marks it copy-local, because FrameworkPathOverride points at a mod folder
+       rather than a directory RAR recognises as a framework. That drops a 4.6MB mscorlib.dll into
+       Assemblies/, which RimWorld would then load alongside its own. Clear the list wholesale. -->
+  <Target Name="NoCopyLocal" AfterTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
+    </ItemGroup>
+  </Target>
 
 </Project>
