@@ -29,6 +29,7 @@ namespace LocalCSharpFixes
                       nameof(ThirdPartyPatches.RM_PreApplyDamage_Finalizer));
 
             GrimWorld40kFixes.Apply(h);
+            VACLogSpamFixes.Apply(h);
 
             Log.Message("[LocalCSharpFixes] Harmony patches applied.");
         }
