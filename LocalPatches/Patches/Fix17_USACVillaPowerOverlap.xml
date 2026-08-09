@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix17: Ascension Megacorp (AOBA.USAC.Core, workshop 3678583415) lays out the power room of
+       USAC_Villa_A as if every building were 1x1:
+         1.6/Defs/StructureDef/StructureDef.xml
+           :261 Battery            pos (4, 0, 9)
+           :265 WoodFiredGenerator pos (5, 0, 9)   ThingRect size (2, 1)
+           :316 Battery            pos (4, 0, 10)
+           :320 WoodFiredGenerator pos (5, 0, 10)  ThingRect size (2, 1)
+       Vanilla footprints are Battery (1,2) and WoodFiredGenerator (2,2), and FFF_Element_ThingRect
+       places one copy PER CELL of its rect. So a rect of (2,1) already self-overlaps - two 2x2
+       generators one cell apart - and the second row then collides with the first. Fortified
+       Features Framework's ErrorCheckAllDefs reports 8 lines over 6 cells:
+         (4,0,10) Battery/Battery
+         (5,0,10) (6,0,9) (6,0,10) (6,0,11) (7,0,10) WoodFiredGenerator/WoodFiredGenerator
+       -> "Two transmitters can't share a cell - PowerNetGrid will error at map generation."
+       This is a pre-flight warning at def load; the actual PowerNetGrid failure only happens if the
+       villa is selected during map generation.
+
+       The room is walled in at x=3 (Wall :293 / HiddenConduit) and x=7 (Wall :296 / Door), with a
+       wall row across z=11 (:299), leaving an interior of exactly x=4..6, z=9..10 - 3x2, six cells.
+       The author's four power buildings cannot fit there under any arrangement. One Battery plus
+       one WoodFiredGenerator tile it perfectly:
+         Battery            (4, 0, 9) occupies x4,    z9..10  = 2 cells
+         WoodFiredGenerator (5, 0, 9) occupies x5..6, z9..10  = 4 cells
+       So: keep the z=9 Battery, drop the z=10 Battery, drop BOTH generator rects, and add a single
+       generator as a plain FFF_Element_Thing. The villa still gets working power; it loses the
+       duplicate battery and the generators that were never physically placeable.
+
+       NOTE ON success: deliberately NOT success=Always, unlike most patches here. Fix14 sat dead for
+       four days after an upstream restructure precisely because Always hid the mismatch. The
+       PatchOperationFindMod wrapper already makes this a no-op when Ascension Megacorp is absent, so
+       the only way the inner operations can fail is if the def itself changed shape - which is
+       exactly the case we want to be told about. If AOBA fixes the layout upstream this will start
+       erroring; that error is the signal to delete this file. -->
+  <Operation Class="PatchOperationFindMod">
+    <mods>
+      <li>Ascension Megacorp</li>
+    </mods>
+    <match Class="PatchOperationSequence">
+      <operations>
+
+        <!-- Duplicate battery: 1x2 at (4,0,9) already covers z9..10, so this one collides at z10. -->
+        <li Class="PatchOperationRemove">
+          <xpath>/Defs/Fortified.Structures.FFF_StructureDef[defName="USAC_Villa_A"]/elements/li[def="Battery" and pos="(4, 0, 10)"]</xpath>
+        </li>
+
+        <!-- Both generator rects. Each is internally overlapping, not just row-vs-row. -->
+        <li Class="PatchOperationRemove">
+          <xpath>/Defs/Fortified.Structures.FFF_StructureDef[defName="USAC_Villa_A"]/elements/li[def="WoodFiredGenerator"]</xpath>
+        </li>
+
+        <!-- One correctly-placed generator filling the remaining x5..6, z9..10. -->
+        <li Class="PatchOperationAdd">
+          <xpath>/Defs/Fortified.Structures.FFF_StructureDef[defName="USAC_Villa_A"]/elements</xpath>
+          <value>
+            <li Class="Fortified.Structures.FFF_Element_Thing">
+              <def>WoodFiredGenerator</def>
+              <pos>(5, 0, 9)</pos>
+            </li>
+          </value>
+        </li>
+
+      </operations>
+    </match>
+  </Operation>
+</Patch>
