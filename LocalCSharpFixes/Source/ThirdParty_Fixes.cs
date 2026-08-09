@@ -15,6 +15,8 @@ namespace LocalCSharpFixes
     //   void         SmartFarming.MapComponent_SmartFarming.FinalizeInit()
     //   void         ReinforcedMechanoids.TrooperStorage.PreApplyDamage(ref DamageInfo, ref bool)
     //   bool         PickUpAndHaul.JobDriver_HaulToInventory.TryMakePreToilReservations(bool errorOnFailed)
+    //   static void  Defaults.WorkPriorities.Patch_Pawn.Postfix(Pawn __instance)
+    //   void         VEF.AnimalBehaviours.JobDriver_IngestWeird+<>c__DisplayClass20_0.<FinalizeIngestAnything>b__0()
     internal static class ThirdPartyPatches
     {
         // VSIE: GetChairFor calls ClosestThingReachable(food.Position, ...) without checking food.Spawned.
@@ -70,5 +72,20 @@ namespace LocalCSharpFixes
             catch { }
             return true;
         }
+
+        // Defaults (1trickPwnyta): WorkPriorities.Patch_Pawn.Postfix (their postfix on
+        // Pawn.Notify_DisabledWorkTypesChanged) calls First() on a sequence with no matching element
+        // whenever a pawn without work settings — any animal — dies, throwing
+        // InvalidOperationException mid Pawn.Kill ("Error while killing X during phase 6").
+        // Suppress exactly that exception; anything else still surfaces.
+        public static Exception Defaults_WorkPrioPostfix_Finalizer(Exception __exception)
+            => __exception is InvalidOperationException ? null : __exception;
+
+        // VEF AnimalBehaviours: JobDriver_IngestWeird's FinalizeIngestAnything toil initAction NREs
+        // when the weird-food target (e.g. filth) is gone by finalize time. Suppress the NRE; the
+        // job simply ends and the pawn moves on. NB the target is a compiler-generated lambda, so
+        // the name is compile-specific — the log+skip registration covers VEF rebuilds.
+        public static Exception VEF_IngestWeird_Finalizer(Exception __exception)
+            => __exception is NullReferenceException ? null : __exception;
     }
 }

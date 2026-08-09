@@ -27,9 +27,14 @@ namespace LocalCSharpFixes
                       nameof(ThirdPartyPatches.PUAH_TryMakePreToilReservations_Prefix));
             TryFinalizer(h, "ReinforcedMechanoids.TrooperStorage", "PreApplyDamage",
                       nameof(ThirdPartyPatches.RM_PreApplyDamage_Finalizer));
+            TryFinalizer(h, "Defaults.WorkPriorities.Patch_Pawn", "Postfix",
+                      nameof(ThirdPartyPatches.Defaults_WorkPrioPostfix_Finalizer));
+            TryFinalizer(h, "VEF.AnimalBehaviours.JobDriver_IngestWeird+<>c__DisplayClass20_0", "<FinalizeIngestAnything>b__0",
+                      nameof(ThirdPartyPatches.VEF_IngestWeird_Finalizer));
 
             GrimWorld40kFixes.Apply(h);
             VACLogSpamFixes.Apply(h);
+            VTECompanyFixes.Apply(h);
 
             Log.Message("[LocalCSharpFixes] Harmony patches applied.");
         }

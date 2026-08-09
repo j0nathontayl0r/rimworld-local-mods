@@ -54,6 +54,17 @@ the session, and the following launch is quiet. Seen 2026-08-09 with a removed
 cyberpunk apparel mod (~2,810 lines) and again with `RR_Weapon_Torch` after
 removing Research Reinvented: Stepping Stones.
 
+## VTE duplicate company loadIDs — patched locally (2026-08-09)
+
+Vanilla Trading Expanded assigns new stock-market company IDs as
+`companies.Count`, so once any company has been removed, new spawns collide
+with existing IDs → `DebugLoadIDsSavingErrorsChecker` warnings on every
+(auto)save. Present in VTE 1.4–1.6; worth reporting upstream. Fixed durably by
+`LocalCSharpFixes` (`VTE_Fixes.cs`): ctor postfix reassigns colliding IDs to
+max+1, and a `TradingManager.ExposeData` postfix re-IDs duplicates already
+baked into a save at load. One-off save surgery alone does NOT stick — the
+game regenerates colliding companies within minutes.
+
 ## Research Reinvented: Stepping Stones — removed as buggy (2026-08-09)
 
 Removed from the list ("buggy as"). While present it also logged seven
