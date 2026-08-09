@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix12: RimWorld 1.6 split Pawn_Melee_Punch_HitBuilding into material variants
+       (_Generic / _Metal / _Stone / _Wood) and dropped the bare name. Three still-active mods keep
+       setting the old name on their races' <soundMeleeHitBuilding>:
+         Machines of War   (EL.MOW)              1.6/Defs/ThingDefs_Races/Races_Mechanoid.xml x2
+         [AV] Mechtech     (Veltaris.Mechtech)   1.6/Defs/Mech_Fluoid.xml x1
+         One with Death    (6224Y.OneWithDeath)  1.6/Defs/misc/Forge/Ascendant/Ascendant.xml x4
+       -> 6x "Could not resolve cross-reference: No Verse.SoundDef named
+       Pawn_Melee_Punch_HitBuilding found to give to Verse.RaceProperties (using undefined sound
+       instead)".
+       Re-add the bare name as an alias of _Generic (body copied verbatim from Core's
+       Interact_Oneshots_Melee.xml) instead of rewriting seven references, so any other mod carrying
+       the same stale name is covered too. Conditional on it being absent, so this disappears
+       cleanly if Ludeon ever restores the def. -->
+  <Operation Class="PatchOperationConditional">
+    <xpath>/Defs/SoundDef[defName="Pawn_Melee_Punch_HitBuilding"]</xpath>
+    <nomatch Class="PatchOperationAdd">
+      <xpath>/Defs</xpath>
+      <value>
+        <SoundDef>
+          <defName>Pawn_Melee_Punch_HitBuilding</defName>
+          <context>MapOnly</context>
+          <maxSimultaneous>1</maxSimultaneous>
+          <subSounds>
+            <li>
+              <grains>
+                <li Class="AudioGrain_Folder">
+                  <clipFolderPath>Impact/Ground</clipFolderPath>
+                </li>
+              </grains>
+              <volumeRange>19.56522~31.52174</volumeRange>
+              <pitchRange>0.8516304~1.190761</pitchRange>
+            </li>
+          </subSounds>
+        </SoundDef>
+      </value>
+    </nomatch>
+  </Operation>
+</Patch>

@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>LocalEarlyFixes</AssemblyName>
+    <RootNamespace>LocalEarlyFixes</RootNamespace>
+    <Configuration>Release</Configuration>
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+
+    <!-- Output straight into the mod's Assemblies/ folder (RimWorld loads DLLs from there) -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <OutputPath>$(MSBuildProjectDirectory)/../Assemblies</OutputPath>
+
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+
+    <!-- Windows paths. LocalCSharpFixes.csproj targets a Linux box (/mnt/games/...); this one builds
+         against the local Steam install so it can be compiled on this machine. -->
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <RimManaged>C:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64_Data\Managed</RimManaged>
+    <HarmonyDll>C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\2009463077\Current\Assemblies\0Harmony.dll</HarmonyDll>
+    <FrameworkPathOverride>$(RimManaged)</FrameworkPathOverride>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Base class library from RimWorld's Managed folder -->
+    <Reference Include="mscorlib">     <HintPath>$(RimManaged)\mscorlib.dll</HintPath>     <Private>false</Private></Reference>
+    <Reference Include="System">       <HintPath>$(RimManaged)\System.dll</HintPath>       <Private>false</Private></Reference>
+    <Reference Include="System.Core">  <HintPath>$(RimManaged)\System.Core.dll</HintPath>  <Private>false</Private></Reference>
+    <Reference Include="System.Xml">   <HintPath>$(RimManaged)\System.Xml.dll</HintPath>   <Private>false</Private></Reference>
+    <!-- RimWorld + Unity + Harmony -->
+    <Reference Include="Assembly-CSharp">        <HintPath>$(RimManaged)\Assembly-CSharp.dll</HintPath>        <Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"> <HintPath>$(RimManaged)\UnityEngine.CoreModule.dll</HintPath> <Private>false</Private></Reference>
+    <Reference Include="UnityEngine">            <HintPath>$(RimManaged)\UnityEngine.dll</HintPath>            <Private>false</Private></Reference>
+    <Reference Include="0Harmony">               <HintPath>$(HarmonyDll)</HintPath>                            <Private>false</Private></Reference>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix14: Alien | Rimworld (niz.xenomorphtype) ships its Dubs Bad Hygiene compatibility defs in
+       an UNVERSIONED folder - Compatibility/DubsBadHygiene/Defs/DBHInfiltrationNetwork.xml:17 - so
+       they load unconditionally, and one lists <li>WaterTrough</li> in a <things> list.
+       DBH IS active and DOES define WaterTrough (836308268/1.6/Defs/ThingDefs_Buildings/
+       BuildingsB_Hygiene.xml:251), but tags it DBHThirst="true" - DBH's own conditional-def
+       attribute - and DBH drops those defs when its thirst module is off, leaving the reference
+       dangling -> "Could not resolve cross-reference to Verse.ThingDef named WaterTrough
+       (wanter=things)".
+       FIRST ATTEMPT (failed, don't retry): PatchOperationConditional on
+       /Defs/ThingDef[defName="WaterTrough"] with a <nomatch> removal. Verified against a real run -
+       the error survived. DBH strips DBHThirst defs AFTER the XML patch phase, so at patch time the
+       def is still present and the conditional never fires. No XML-time test can see the strip.
+       So: remove the reference unconditionally.
+       TRADEOFF: if you ever switch DBH's thirst module ON, WaterTrough will exist and this patch
+       will still strip it from the infiltration network - xenomorphs won't treat troughs as a water
+       source. That is the only behavioural cost. If you enable thirst, delete this file.
+       success=Always so it stays silent if Alien|Rimworld ever drops the reference itself. -->
+  <Operation Class="PatchOperationRemove">
+    <success>Always</success>
+    <xpath>/Defs//things/li[text()="WaterTrough"]</xpath>
+  </Operation>
+</Patch>

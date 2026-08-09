@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix16: Star Wars : The Force Standalone (lee.theforce.standalone, workshop 3557220601) has one
+       backstory whose description references a grammar symbol that does not exist:
+         1.6/Defs/BackstoryDef/BackstoryDef_ForceSensitive.xml:113  defName Force_SithSlave
+         "Once a slave on [PAWN_planetOfOrigin], ..."
+       Verified: PAWN_planetOfOrigin is not a vanilla symbol, and nothing in the entire load order
+       supplies it - not one XML file outside this backstory, and not one assembly (checked every
+       DLL in the workshop folder for the string). It is an author oversight, not a missing
+       dependency, so no mod can ever resolve it ->
+         "Grammar unresolvable. Root 'r_root'  ...  PAWN_planetOfOrigin -> UNRESOLVABLE"
+       When one symbol fails the whole RULE fails, so the entire description renders as nothing.
+       That makes this cosmetic but total: the backstory has no readable description anywhere it is
+       shown, not just in Character Editor (Character Editor merely surfaced it by calling
+       BackstoryDef.FullDescriptionFor on every backstory to build its browser list).
+       Replace the symbol with static prose. "a backwater world" keeps the sentence grammatical and
+       biome/faction-neutral, since there is no pawn data to derive a real planet name from - the
+       symbol never had a source to begin with. All other symbols in the line resolve fine and are
+       left untouched. -->
+  <Operation Class="PatchOperationReplace">
+    <success>Always</success>
+    <xpath>/Defs/BackstoryDef[defName="Force_SithSlave"]/description</xpath>
+    <value>
+      <description>Once a slave on a backwater world, [PAWN_nameDef]'s suffering forged an unbreakable will. When a Sith sensed [PAWN_possessive] rage, [PAWN_pronoun] was taken—not freed—to be honed into a weapon of the dark side.</description>
+    </value>
+  </Operation>
+</Patch>

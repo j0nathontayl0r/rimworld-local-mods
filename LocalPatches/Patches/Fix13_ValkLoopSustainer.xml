@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix13: GrimWorld 40,000 - Talons of the Emperor (grimworld.talonOfTheEmperor) gives the
+       Custodes bike an engine sustainer referencing SoundDef "valkloop":
+         1.6/Vehicles/Defs/ThingDefs_Vehicles/DawnEagleBike/GW_Tank_CustodesBikePawn.xml:58-64
+       No SoundDef by that name exists anywhere in the load order - the mod never shipped it - so
+       -> "Could not resolve cross-reference: No Verse.SoundDef named valkloop found to give to
+       Vehicles.VehicleSustainerEventEntry`1[Vehicles.VehicleEventDef]".
+       There is no sensible substitute to guess at (it was presumably a Valkyrie engine loop), so
+       drop the whole <li>: the bike just runs without an engine sustainer, which is what already
+       happens today except without the log error. Matched by its <value> rather than by position,
+       so an upstream reorder can't make this hit the wrong entry. success=Always so it goes quiet
+       if the mod ever ships the sound. -->
+  <Operation Class="PatchOperationRemove">
+    <success>Always</success>
+    <xpath>/Defs//soundSustainersOnEvent/li[value="valkloop"]</xpath>
+  </Operation>
+</Patch>

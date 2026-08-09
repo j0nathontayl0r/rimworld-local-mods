@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Local Early Fixes</name>
+  <author>micro</author>
+  <packageId>local.earlyfixes</packageId>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <description>Companion to Local C# Fixes for patches that MUST be applied before other mods' Mod
+constructors run.
+
+Local C# Fixes uses [StaticConstructorOnStartup], which runs after defs are loaded - far too late to
+prevent a type initialiser from failing during CreateModClasses. This mod uses a Mod subclass instead,
+so its constructor runs during CreateModClasses, and it MUST sit near the top of the load order
+(immediately after the official DLCs, before any content mod).
+
+Currently fixes: VFEPirates.PawnsArrivalModeWorker_Gauntlet type-initialiser failure, which also
+aborts Coventech Mechsuit Framework's mod instantiation.</description>
+  <!-- Harmony must be loaded before us. Everything else must load AFTER us, which load order
+       position enforces - loadAfter can't express "before mod X", so placement matters. -->
+  <loadAfter>
+    <li>brrainz.harmony</li>
+  </loadAfter>
+</ModMetaData>
