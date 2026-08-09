@@ -54,3 +54,8 @@ tree and rewrites it on sync or file-verification.
 
 ## `recovered-spec/`
 The original design/triage notes (recovered from a backup) documenting what each patch fixes and why.
+
+## Known incompatibilities
+Mod combinations that broke and shouldn't be re-tried (e.g. Coventech Mechsuit
+Framework × VFE Pirates) are logged in
+[`KNOWN-INCOMPATIBILITIES.md`](KNOWN-INCOMPATIBILITIES.md).
