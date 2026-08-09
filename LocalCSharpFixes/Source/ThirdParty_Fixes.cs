@@ -17,6 +17,7 @@ namespace LocalCSharpFixes
     //   bool         PickUpAndHaul.JobDriver_HaulToInventory.TryMakePreToilReservations(bool errorOnFailed)
     //   static void  Defaults.WorkPriorities.Patch_Pawn.Postfix(Pawn __instance)
     //   void         VEF.AnimalBehaviours.JobDriver_IngestWeird+<>c__DisplayClass20_0.<FinalizeIngestAnything>b__0()
+    //   static void  VAC.VAC_Settings.PlayEventNotificationWithVolumeByDef(SoundDef, string)
     internal static class ThirdPartyPatches
     {
         // VSIE: GetChairFor calls ClosestThingReachable(food.Position, ...) without checking food.Spawned.
@@ -87,5 +88,15 @@ namespace LocalCSharpFixes
         // the name is compile-specific — the log+skip registration covers VEF rebuilds.
         public static Exception VEF_IngestWeird_Finalizer(Exception __exception)
             => __exception is NullReferenceException ? null : __exception;
+
+        // VAC: its GenSpawn.Spawn prefix fires event notification sounds during Map.FinalizeLoading,
+        // which runs on the loading thread. Audio resource loading is main-thread-only, so every such
+        // call logs "Tried to get a resource from a different thread" + a grain resolve failure
+        // (2 errors per save load). Skip the sound when off the main thread — audio couldn't have
+        // played from there anyway; in-play event sounds always fire from the main thread and are
+        // unaffected. (VAC also lacks the TransportCrash1 clip entirely; if a grain error ever shows
+        // up in-play on the main thread, add that exact string to the VAC log filter as well.)
+        public static bool VAC_PlayEventNotification_Prefix()
+            => UnityData.IsInMainThread;
     }
 }

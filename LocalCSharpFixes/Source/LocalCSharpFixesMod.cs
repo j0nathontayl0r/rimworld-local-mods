@@ -31,6 +31,8 @@ namespace LocalCSharpFixes
                       nameof(ThirdPartyPatches.Defaults_WorkPrioPostfix_Finalizer));
             TryFinalizer(h, "VEF.AnimalBehaviours.JobDriver_IngestWeird+<>c__DisplayClass20_0", "<FinalizeIngestAnything>b__0",
                       nameof(ThirdPartyPatches.VEF_IngestWeird_Finalizer));
+            TryPrefix(h, "VAC.VAC_Settings", "PlayEventNotificationWithVolumeByDef",
+                      nameof(ThirdPartyPatches.VAC_PlayEventNotification_Prefix));
 
             GrimWorld40kFixes.Apply(h);
             VACLogSpamFixes.Apply(h);
