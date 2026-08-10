@@ -12,6 +12,7 @@ namespace LocalCSharpFixes
     //   RimWorld.Pawn_FlightTracker.Notify_JobStarted(Job job)
     //   static RimWorld.ForbidUtility.SetForbidden(Thing t, bool value, bool warnOnFail)
     //   Verse.Thing.Destroy(DestroyMode mode)
+    //   Verse.PathFinderMapData.Notify_Reservation(ReservationManager.Reservation)
 
     // Vanilla: when the World Pawn GC discards a pawn, CompAttachBase.PostDestroy tries to destroy its
     // attached AttachableThings (e.g. Fire). If the fire already went out and was destroyed, the stale
@@ -81,6 +82,21 @@ namespace LocalCSharpFixes
             if (value && t?.def != null && t.def.defName == "AA_BlackTruffles")
                 return false; // skip forbidding
             return true;
+        }
+    }
+
+    // Vanilla (1.6): PathFinderMapData.Notify_Reservation NREs when a reservation is released for an
+    // already-destroyed thing (no map to update), preceded by vanilla's own "Releasing destroyed
+    // thing ..." warning. Trigger in this colony: MendAndRecycle finishing a mend bill on stackable
+    // CE ordnance (smoke grenades), which merges/destroys the mended stack before the Release toil
+    // runs. The pathfinder has nothing to update for a mapless thing; swallow the NRE so the job
+    // ends cleanly instead of crashing the driver.
+    [HarmonyPatch(typeof(PathFinderMapData), "Notify_Reservation")]
+    internal static class PathFinderMapData_NotifyReservation_Suppress
+    {
+        private static Exception Finalizer(Exception __exception)
+        {
+            return __exception is NullReferenceException ? null : __exception;
         }
     }
 }
