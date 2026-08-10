@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix18: The Generic Ammo Experience for CE (3284460811), when Vanilla Traits Expanded is
+       active, REPLACES Combat Extended's Bravery TraitDef with a single-degree stub (degree 0
+       only, commonality 0) so VTE's Brave/Fearless traits take over for new pawns. Pawns that
+       already hold Bravery at the original degrees (-1 cowardly / 1 brave / 2 fearless) then spam
+       "Bravery found no data at degree N, returning first defined" every CE suppression check,
+       and a degree -1 coward silently inherits fearless stats via the fallback.
+       Re-add the three original degree entries (copied verbatim from CE's Traits_Spectrum.xml) on
+       top of the stub. commonality stays 0, so no new pawn ever rolls the trait - this only makes
+       existing trait-holders resolve correctly again. LocalPatches loads last, so this runs after
+       their replace. Guarded on both mods + skipped if degree 2 already exists (in case Generic
+       Ammo fixes their patch upstream). -->
+  <Operation Class="PatchOperationFindMod">
+    <mods>
+      <li>The Generic Ammo Experience for Combat Extended</li>
+    </mods>
+    <match Class="PatchOperationFindMod">
+      <mods>
+        <li>Vanilla Traits Expanded</li>
+      </mods>
+      <match Class="PatchOperationConditional">
+        <xpath>/Defs/TraitDef[defName="Bravery"]/degreeDatas/li[degree="2"]</xpath>
+        <nomatch Class="PatchOperationAdd">
+          <xpath>/Defs/TraitDef[defName="Bravery"]/degreeDatas</xpath>
+          <value>
+            <li>
+              <label>cowardly</label>
+              <description>[PAWN_nameDef] always shies away from danger. [PAWN_pronoun] is usually the first to flee from battle.</description>
+              <degree>-1</degree>
+              <statOffsets>
+                <Suppressability>0.25</Suppressability>
+              </statOffsets>
+            </li>
+            <li>
+              <label>brave</label>
+              <description>Few things scare [PAWN_nameDef]. In battle [PAWN_pronoun] stands unfazed where others panic and flee.</description>
+              <degree>1</degree>
+              <statOffsets>
+                <Suppressability>-0.50</Suppressability>
+              </statOffsets>
+            </li>
+            <li>
+              <label>fearless</label>
+              <description>[PAWN_nameDef] laughs in the face of danger. Some ascribe it to bravery, others to stupidity. Either way, [PAWN_nameDef] seems to lack any sense of self-preservation and will never flee from a threatening situation.</description>
+              <degree>2</degree>
+              <statOffsets>
+                <Suppressability>-1.0</Suppressability>
+              </statOffsets>
+            </li>
+          </value>
+        </nomatch>
+      </match>
+    </match>
+  </Operation>
+</Patch>
