@@ -37,6 +37,7 @@ namespace LocalCSharpFixes
             GrimWorld40kFixes.Apply(h);
             VACLogSpamFixes.Apply(h);
             VTECompanyFixes.Apply(h);
+            TraderShipsFixes.Apply(h);
 
             Log.Message("[LocalCSharpFixes] Harmony patches applied.");
         }
