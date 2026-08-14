@@ -13,6 +13,11 @@
 # Deliberately NOT setting "* text=auto" here: that would renormalise every existing text file's line
 # endings in one commit, producing a repo-wide diff that buries real history.
 
+# Shell scripts MUST keep LF endings. core.autocrlf=true on the Windows box would otherwise check
+# them out with CRLF, and bash on the Linux box then fails with "bad interpreter: /usr/bin/env
+# bash^M" - the script would be broken the moment it arrived, having looked fine on Windows.
+*.sh text eol=lf
+
 *.dll binary
 *.pdb binary
 *.dds binary
