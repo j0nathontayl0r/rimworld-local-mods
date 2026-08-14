@@ -52,6 +52,38 @@ On Windows use junctions (`mklink /J`) rather than symlinks — they need no ele
 follows them transparently. Never link into `steamapps/workshop/content/294100/`: Steam owns that
 tree and rewrites it on sync or file-verification.
 
+## Syncing between the Linux and Windows machines
+
+Both boxes play from this repo through those links, so a `git pull` changes what RimWorld loads the
+moment it lands. Launch through the wrapper rather than pulling by hand:
+
+```
+scripts\sync-and-play.ps1          # Windows
+./scripts/sync-and-play.sh         # Linux
+```
+
+Each one finds the repo from its own location (no per-machine config), then refuses to proceed on
+anything ambiguous: RimWorld already running, a dirty working tree, or a diverged history. It also
+**warns about unpushed commits**, which is the failure that actually bites — on 2026-08-14 the
+Windows box worked for four days against a remote that was six commits ahead, because `git status`
+compares against the *local* `origin/main` ref and will happily report "in sync" while badly stale.
+Only `git fetch` can tell you otherwise, so the wrapper always fetches.
+
+Useful flags: `-Launcher none` / `--launcher none` to sync without playing, and `-NoPull` /
+`--no-pull` for a read-only report (allowed even while the game is running).
+
+The pull is `--ff-only` by design. This repo commits its compiled DLLs, so a merge is never correct —
+two machines building identical source produce different bytes, and git cannot reconcile them. Set
+this once per clone so manual pulls are equally safe:
+
+```
+git config pull.ff only
+```
+
+**The DLLs in `Assemblies/` are committed deliberately** so a fresh checkout runs without a build
+step. The tradeoff: always rebuild before committing C#, and always fetch before starting work, or
+one machine will silently run stale code.
+
 ## `recovered-spec/`
 The original design/triage notes (recovered from a backup) documenting what each patch fixes and why.
 

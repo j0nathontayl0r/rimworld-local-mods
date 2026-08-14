@@ -1,0 +1,23 @@
+# Mark the tracked binaries explicitly.
+#
+# Git already detects these as binary by heuristic, so this changes no stored content - it just
+# stops git guessing. Two things it buys us:
+#   - no CRLF conversion is ever attempted on them (core.autocrlf=true is set on the Windows box)
+#   - a conflict on a DLL is reported as a plain binary conflict instead of git trying to merge it
+#
+# The compiled DLLs in Assemblies/ are committed on purpose - RimWorld loads them directly and never
+# compiles anything, so checking out the repo on a second machine has to yield a working mod without
+# a build step. The cost is that DLLs cannot be merged: two machines building the same source produce
+# different bytes. Always rebuild before committing C#, and always fetch before starting work.
+#
+# Deliberately NOT setting "* text=auto" here: that would renormalise every existing text file's line
+# endings in one commit, producing a repo-wide diff that buries real history.
+
+*.dll binary
+*.pdb binary
+*.dds binary
+*.png binary
+*.jpg binary
+*.wav binary
+*.ogg binary
+*.rws binary
