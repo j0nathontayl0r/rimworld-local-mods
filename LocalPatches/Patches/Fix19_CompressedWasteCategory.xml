@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix19: OgreStack silently refuses to stack AV_CompressedWaste, and no Overrides.xml entry can
+       make it work.
+
+       [AV] Mechtech (3339795890) defines the item in 1.6/Defs/Items_WasteContainment.xml with a
+       single category, and its own comment shows the author was unhappy with the choice:
+           <thingCategories>
+             <!-\- <li>ItemsMisc</li>  until I find out how to remove it from shelfs-\->
+             <li>Chunks</li>
+           </thingCategories>
+
+       OgreStack (1447140290) bans a fixed set of categories outright. Decompiled 2026-08-14 from
+       1.6/Assemblies/OgreStack.dll:
+
+           private static readonly HashSet<string> _CATEGORIES_BANNED =
+               { "Chunks", "Furniture", "StoneChunks", "WeaponsMelee", "Books" };
+
+           // ModifyStackSizes(), per ThingDef:
+           int itemLevelOverride = individualOverrides.GetItemLevelOverride(allDef.defName);
+           if (itemLevelOverride > 0) { allDef.stackLimit = itemLevelOverride; }   // user value applied
+           if (individualOverrides.IsCategoryBanned(allDef.FirstThingCategory.ToString()))
+           { allDef.stackLimit = 1; }                                              // then clobbered
+
+       The two ifs are sequential with no else, so a banned category ALWAYS beats a user override.
+       The Overrides.xml entry is read and applied, then reset to 1 one line later - which is why the
+       entry still shows in OgreStack's settings window (DoSettingsWindowContents renders the parsed
+       file via ViewInternalOverrides) while the live stackLimit stays at 1. Menu and behaviour read
+       from different places.
+
+       Patching <stackLimit> directly does NOT work: OgreStack rewrites stackLimit on every ThingDef
+       at startup, after all XML patches have run. The only thing that helps is changing what
+       OgreStack SEES, so FirstThingCategory is no longer a banned one.
+
+       Replace Chunks with ItemsMisc - the category the author originally wanted. OgreStack then
+       applies the Overrides.xml value normally.
+
+       SIDE EFFECT (accepted deliberately): thingCategories drives storage/bill filter placement, so
+       compressed waste now appears under Items > Misc rather than Chunks. Stockpile and shelf
+       filters that were set to accept Chunks will no longer include it, and any existing zone
+       configured that way needs re-ticking. The author's comment suggests shelf behaviour was the
+       reason for Chunks in the first place, so watch for compressed waste becoming shelf-storable.
+
+       Requires a matching entry in OgreStack's Overrides.xml, which is user config and lives outside
+       this repo:
+           <item defName="AV_CompressedWaste" stackLimit="100" />
+
+       success is NOT Always - if [AV] Mechtech restructures this def we want to be told rather than
+       have the fix rot silently, as Fix14 did. PatchOperationFindMod already makes it inert when the
+       mod is absent. -->
+  <Operation Class="PatchOperationFindMod">
+    <mods>
+      <li>[AV] Mechtech</li>
+    </mods>
+    <match Class="PatchOperationReplace">
+      <xpath>/Defs/ThingDef[defName="AV_CompressedWaste"]/thingCategories</xpath>
+      <value>
+        <thingCategories>
+          <li>ItemsMisc</li>
+        </thingCategories>
+      </value>
+    </match>
+  </Operation>
+</Patch>
