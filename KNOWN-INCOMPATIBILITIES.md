@@ -3,6 +3,47 @@
 Running notes on mod combinations that broke, so they aren't re-tried later.
 Dates are when the issue was diagnosed on the live modlist.
 
+## GrimWorld Mine-Extensions `SpringChance` — UNFIXABLE from Harmony (2026-08-15)
+
+`GrimWorld 40,000 - Core Imperialis` (`grimworld.core`, workshop 3018671708)
+bundles `mine_extensions.Building_TrapMassExplosive`, which its own shipped
+source declares as a verbatim copy of RimWorld **1.5**'s
+`RimWorld.Building_TrapExplosive` (see the header comment in
+`3018671708/Source/.../Building_TrapMassExplosive.cs`, "Assembly-CSharp,
+Version=1.5.9214.33606"). Its `SpringChance` calls `Pawn.IsNonMutantAnimal`,
+which 1.6 removed — 1.6 exposes `IsAnimal` and `IsMutant` separately. Result:
+
+```
+Error in GrimWorld 40,000 - Core Imperialis, assembly name: Mine-Extensions,
+method: Building_TrapMassExplosive:SpringChance, exception:
+System.MissingMethodException: Method not found: bool Verse.Pawn.get_IsNonMutantAnimal()
+```
+
+**Cannot be patched with Harmony — do not try again.** Harmony must *read* the
+original method body to build any replacement, and reading resolves the dangling
+`IsNonMutantAnimal` token, throwing the very exception the patch exists to
+prevent. The stack proves it: the failure is inside
+`HarmonyLib.MethodBodyReader.ReadOperand` → `RuntimeModule.ResolveMethodToken`,
+i.e. during instruction reading, before any prefix/postfix/transpiler could run.
+Prefix, postfix and transpiler all require that same read, so no variation helps.
+`LocalEarlyFixes.MineExtensionsSpringChanceFix` keeps the attempt in source as
+documentation; it logs at Message level because failing is now the expected
+outcome:
+
+```
+[LocalEarlyFixes] SpringChance fix not applied (expected, see source): ...
+```
+
+Remaining routes: a **Prepatcher** IL rewrite (which edits IL before anything
+reads the method — Prepatcher is active at load order 0, and DefLoadCache uses
+the same FreePatch mechanism, so it is known to work in this setup), or an
+upstream GrimWorld fix.
+
+Note the error is often reported by **Mod Error Checker**
+(`Taranchuk.ModErrorChecker`) rather than by our fix mods — it sweeps every
+assembly with `PatchProcessor.GetOriginalInstructions`, hitting the same
+unreadable body. That is the tool working correctly, not a second bug.
+
 ## Coventech Mechsuit Framework × VFE Pirates — REMOVED, do not re-add (2026-08-09)
 
 `Coventech Mechsuit Framework` (workshop 3636334743, packageId
