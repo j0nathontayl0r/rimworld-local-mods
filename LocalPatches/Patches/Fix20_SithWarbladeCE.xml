@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix20: Force_SithBladelink ("Sith Warblade") has no Combat Extended support, so CE logs on
+       every info-card view:
+         Trying to get stat MeleeDamageAverage from Force_SithBladelink which has no support for
+         Combat Extended.
+         Trying to get stat MeleeArmorPenetration from Force_SithBladelink ...
+
+       WHY IT IS MISSED: a CE patch DOES ship for these mods, but it lives in the *lightsaber* mod
+       (3466124712, 1.6/Mods/CE/Patches/ThingDefs_WeaponMelee/Force_Lightsabers.xml, loaded via
+       LoadFolders IfModActive=ceteam.combatextended) and only covers Force_LightsaberBase and
+       Force_ImbuedBase. Force_SithBladelink is defined in Star Wars : The Force Standalone
+       (3557220601, 1.6/Mods/SithSorcery/Defs/ThingDefs_Misc/SithArtifact.xml) - the only weapon in
+       that mod - and nothing patches it.
+
+       NOT COSMETIC: CE ignores vanilla <armorPenetration> entirely and reads armorPenetrationSharp
+       and armorPenetrationBlunt off CombatExtended.ToolCE entries. Without them the weapon does not
+       perform as its description claims ("mono-molecular sharpness capable of slicing through even
+       the heaviest of armor") against CE armour.
+
+       BENCHMARK: CE's own MeleeWeapon_MonoSwordBladelink, from
+       2890901044/Royalty/Patches/Royalty/ThingDefs_Misc/Weapons_RoyaltyBladelinkMelee.xml.
+       Chosen over the plain MeleeWeapon_MonoSword because Force_SithBladelink inherits
+       BaseWeapon_Bladelink - it is a persona weapon, so the persona monosword is the like-for-like
+       reference. Values copied verbatim.
+
+       DELIBERATE DEVIATIONS from the mod author's vanilla numbers, listed so they can be dialled
+       back easily:
+         - handle power 12 -> 2 with chanceFactor 0.1. CE deliberately makes handle bashes
+           incidental; leaving 12 would give a pommel strike comparable to a club.
+         - edge power 15 -> 38, point 15 -> 16. CE rebalances melee upward across the board; a
+           power-15 edge would leave this well below an ordinary CE monosword despite being a
+           late-game artifact.
+         - cooldowns 1.6 -> 1.36 / 0.74 / 0.85, matching the persona monosword.
+       PRESERVED: the author's capacities (Blunt / Stab / Cut). CE's monosword uses Poke on the
+       handle, but changing a capacity changes which ManeuverDef applies, so the author's choice is
+       left alone.
+
+       Both mods must be active, so the FindMod wrappers are NESTED - PatchOperationFindMod treats a
+       multi-entry <mods> list as OR, not AND.
+
+       success is NOT Always: the FindMod wrappers already make this inert when either mod is
+       absent, so an inner failure can only mean the def changed shape, which is what Fix14 taught
+       us to hear about rather than have rot silently. -->
+  <Operation Class="PatchOperationFindMod">
+    <mods>
+      <li>Combat Extended</li>
+    </mods>
+    <match Class="PatchOperationFindMod">
+      <mods>
+        <li>Star Wars : The Force Standalone</li>
+      </mods>
+      <match Class="PatchOperationSequence">
+        <operations>
+
+          <li Class="PatchOperationReplace">
+            <xpath>/Defs/ThingDef[defName="Force_SithBladelink"]/tools</xpath>
+            <value>
+              <tools>
+                <li Class="CombatExtended.ToolCE">
+                  <label>handle</label>
+                  <capacities>
+                    <li>Blunt</li>
+                  </capacities>
+                  <power>2</power>
+                  <chanceFactor>0.1</chanceFactor>
+                  <cooldownTime>1.36</cooldownTime>
+                  <armorPenetrationBlunt>0.605</armorPenetrationBlunt>
+                  <linkedBodyPartsGroup>Handle</linkedBodyPartsGroup>
+                </li>
+                <li Class="CombatExtended.ToolCE">
+                  <label>point</label>
+                  <capacities>
+                    <li>Stab</li>
+                  </capacities>
+                  <power>16</power>
+                  <cooldownTime>0.85</cooldownTime>
+                  <armorPenetrationBlunt>1.173</armorPenetrationBlunt>
+                  <armorPenetrationSharp>30.24</armorPenetrationSharp>
+                </li>
+                <li Class="CombatExtended.ToolCE">
+                  <label>edge</label>
+                  <capacities>
+                    <li>Cut</li>
+                  </capacities>
+                  <power>38</power>
+                  <cooldownTime>0.74</cooldownTime>
+                  <armorPenetrationBlunt>3.485</armorPenetrationBlunt>
+                  <armorPenetrationSharp>21.78</armorPenetrationSharp>
+                  <linkedBodyPartsGroup>Edge</linkedBodyPartsGroup>
+                </li>
+              </tools>
+            </value>
+          </li>
+
+          <!-- statBases already exists on this def (MarketValue, Mass), so a plain Add is safe. -->
+          <li Class="PatchOperationAdd">
+            <xpath>/Defs/ThingDef[defName="Force_SithBladelink"]/statBases</xpath>
+            <value>
+              <Bulk>4</Bulk>
+              <MeleeCounterParryBonus>0.50</MeleeCounterParryBonus>
+            </value>
+          </li>
+
+          <!-- The def has no equippedStatOffsets element, so the element itself is added. -->
+          <li Class="PatchOperationAdd">
+            <xpath>/Defs/ThingDef[defName="Force_SithBladelink"]</xpath>
+            <value>
+              <equippedStatOffsets>
+                <MeleeCritChance>1.10</MeleeCritChance>
+                <MeleeParryChance>0.50</MeleeParryChance>
+                <MeleeDodgeChance>0.37</MeleeDodgeChance>
+              </equippedStatOffsets>
+            </value>
+          </li>
+
+        </operations>
+      </match>
+    </match>
+  </Operation>
+</Patch>
