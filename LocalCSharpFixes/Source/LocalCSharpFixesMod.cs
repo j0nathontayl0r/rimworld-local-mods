@@ -37,6 +37,8 @@ namespace LocalCSharpFixes
                       nameof(ThirdPartyPatches.XMT_LifeStageStarted_Prefix));
             TryPrefixAllOverloads(h, "Xenomorphtype.XMTUtility", "WitnessLarva",
                       nameof(ThirdPartyPatches.XMT_WitnessLarva_Prefix), requiredParam: "mapHeld");
+            TryPrefix(h, "Vehicles.Patch_CaravanHandling", "PawnMassUsageInVehicle",
+                      nameof(ThirdPartyPatches.VF_PawnMassUsage_Prefix));
 
             GrimWorld40kFixes.Apply(h);
             VACLogSpamFixes.Apply(h);

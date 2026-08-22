@@ -20,6 +20,7 @@ namespace LocalCSharpFixes
     //   static void  VAC.VAC_Settings.PlayEventNotificationWithVolumeByDef(SoundDef, string)
     //   static void  Xenomorphtype.XMTLifeStagePatches+Patch_LifeStageWorker_Notify_LifeStageStarted.Postfix(Pawn, LifeStageDef)
     //   static ?     Xenomorphtype.XMTUtility.WitnessLarva(IntVec3 positionHeld, Map mapHeld, float, float, float, KnowledgeProfileDef)
+    //   static float Vehicles.Patch_CaravanHandling.PawnMassUsageInVehicle(float massUsage, Pawn pawn)
     internal static class ThirdPartyPatches
     {
         // VSIE: GetChairFor calls ClosestThingReachable(food.Position, ...) without checking food.Spawned.
@@ -122,5 +123,17 @@ namespace LocalCSharpFixes
         // name, which the runtime stack trace confirms against XMT's actual parameter list.
         public static bool XMT_WitnessLarva_Prefix(Map mapHeld)
             => mapHeld != null;
+
+        // Vehicle Framework: PawnMassUsageInVehicle(massUsage, pawn) - a helper its transpiler
+        // splices into CollectionsMassCalculator.MassUsage - starts with pawn.InVehicle(), NREing
+        // when the form-caravan dialog's transferables hold a null pawn (seen: dialog open across
+        // an encounter-map transition; "Exception filling window for Dialog_FormCaravan"). A null
+        // pawn is in no vehicle: pass the mass through unchanged. Inlining note: safe to detour -
+        // Mono doesn't inline methods containing calls, and this one calls InVehicle().
+        public static bool VF_PawnMassUsage_Prefix(float massUsage, Pawn pawn, ref float __result)
+        {
+            if (pawn == null) { __result = massUsage; return false; }
+            return true;
+        }
     }
 }
