@@ -22,6 +22,7 @@ namespace LocalCSharpFixes
     //   static ?     Xenomorphtype.XMTUtility.Witness*(IntVec3 positionHeld, Map mapHeld, float, float, float, KnowledgeProfileDef)  [8-method family]
     //   static float Vehicles.Patch_CaravanHandling.PawnMassUsageInVehicle(float massUsage, Pawn pawn)
     //   static ?     Xenomorphtype.XMTUtility.TrySpawnPawnFromTarget(Pawn, Thing)
+    //   bool         CSL_Blackboard.ITab_CSL_BlackboardSchedule.IsTeachingDisabledForPawn(Pawn) and (Pawn, string&, bool)
     internal static class ThirdPartyPatches
     {
         // VSIE: GetChairFor calls ClosestThingReachable(food.Position, ...) without checking food.Spawned.
@@ -145,5 +146,25 @@ namespace LocalCSharpFixes
         // target is actually on a map. __0/__1 index binding keeps this overload-proof.
         public static bool XMT_TrySpawnPawn_Prefix(Pawn __0, Thing __1)
             => (__0 != null && __0.Spawned) || (__1 != null && __1.Spawned);
+
+        // Children, school and learning (Dylan.CSL): the blackboard schedule tab's
+        // IsTeachingDisabledForPawn calls Pawn_WorkSettings.WorkIsActive without checking the
+        // settings are initialized. The Children mod's area-restriction hook routes EVERY pawn's
+        // job start through it (Area_School cache), so each visitor/trade-ship pawn spams
+        // "<name> did not have work settings initialized" (seen: Kia, Poopy, Darklight). A pawn
+        // with no work settings can't teach: report disabled and skip. Binds by index + __args so
+        // one prefix covers both overloads ((Pawn) and (Pawn, string&, bool)); the priorities
+        // field null-check mirrors vanilla's ConfirmInitializedDebug condition.
+        private static readonly System.Reflection.FieldInfo workPriorities =
+            AccessTools.Field(typeof(Pawn_WorkSettings), "priorities");
+
+        public static bool CSL_TeachingDisabled_Prefix(Pawn __0, object[] __args, ref bool __result)
+        {
+            var ws = __0?.workSettings;
+            if (ws != null && (workPriorities == null || workPriorities.GetValue(ws) != null)) return true;
+            if (__args.Length > 1) __args[1] = "";
+            __result = true;
+            return false;
+        }
     }
 }

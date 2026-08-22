@@ -36,6 +36,7 @@
     <li>VanillaExpanded.VanillaTradingExpanded</li>
     <li>automatic.traderships</li>
     <li>SmashPhil.VehicleFramework</li>
+    <li>Dylan.CSL</li>
     <li>GodlyAnnihilator.TradersHaveMoney</li>
   </loadAfter>
   <description>Local Harmony patch mod that suppresses NREs / log spam and fixes small runtime bugs from workshop mods where an XML patch can't reach.
