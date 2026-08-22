@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Save-compat reconstruction of Traders Have Money's Orbital_Horder trader.
+
+       THM (GodlyAnnihilator.TradersHaveMoney, workshop 2898006725) was removed from the modlist
+       2026-08-22 (its runtime silver stamping nullified Traders have more Silver). Unsubscribing
+       deleted its files, but the active save still references the def from two live objects - a
+       VanillaTradingExpanded.Company and a landed TraderShips ship - logging
+       "Could not load reference to RimWorld.TraderKindDef named Orbital_Horder" on every load and
+       leaving the landed ship with a null TraderKind (NRE risk on tick/interaction).
+
+       The original def is unrecoverable (folder gone; defined nowhere else), so this reconstructs
+       it: the silver range 10000~100000 is documented from the original in the retired
+       TradersHaveMoney_Fixes.cs (git 9db2b11); the stock composition is approximated from the
+       hoarder concept - mountains of silver, buys anything expensive - modelled on vanilla
+       TraderKinds_Orbital_Misc.xml structure. Keep the defName forever, or drop this file only
+       after every save that ever saw the trader is retired. -->
+  <TraderKindDef>
+    <defName>Orbital_Horder</defName>
+    <label>hoarder</label>
+    <orbital>true</orbital>
+    <commonality>0.5</commonality>
+    <faction MayRequire="Ludeon.RimWorld.Odyssey">TradersGuild</faction>
+    <stockGenerators>
+
+      <li Class="StockGenerator_SingleDef">
+        <thingDef>Silver</thingDef>
+        <countRange>10000~100000</countRange>
+      </li>
+      <li Class="StockGenerator_SingleDef">
+        <thingDef>Gold</thingDef>
+        <countRange>200~800</countRange>
+      </li>
+      <li Class="StockGenerator_SingleDef">
+        <thingDef>Jade</thingDef>
+        <countRange>100~400</countRange>
+      </li>
+
+      <!-- A hoarder converts wealth into more wealth: buys anything valuable. -->
+      <li Class="StockGenerator_BuyExpensiveSimple" />
+      <li Class="StockGenerator_BuyTradeTag"><tag>Art</tag></li>
+      <li Class="StockGenerator_BuyTradeTag"><tag>MusicalInstrument</tag></li>
+
+    </stockGenerators>
+  </TraderKindDef>
+
+</Defs>
