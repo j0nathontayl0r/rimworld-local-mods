@@ -4,6 +4,11 @@ Three hand-made local mods that suppress errors / fix small runtime bugs from a 
 modlist, without editing the workshop mods themselves. `LocalPatches` and `LocalCSharpFixes` **must
 load last** in the mod order; `LocalEarlyFixes` is the exception and must load **first** (see below).
 
+Each mod's `About.xml` carries `loadAfter`/`loadBefore` metadata enumerating its actual patch
+targets, so RimSort's auto-sort keeps the placement (an auto-sort once scattered them mid-list,
+2026-08-22, silently disabling an order-dependent fix). **When a new Fix targets a new mod, add that
+mod's packageId to the relevant `loadAfter` list.**
+
 ## Mods
 
 ### `LocalPatches` — packageId `local.errorfixes`

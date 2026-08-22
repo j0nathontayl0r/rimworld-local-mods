@@ -16,9 +16,26 @@ so its constructor runs during CreateModClasses, and it MUST sit near the top of
 
 Currently fixes: VFEPirates.PawnsArrivalModeWorker_Gauntlet type-initialiser failure, which also
 aborts Coventech Mechsuit Framework's mod instantiation.</description>
-  <!-- Harmony must be loaded before us. Everything else must load AFTER us, which load order
-       position enforces - loadAfter can't express "before mod X", so placement matters. -->
+  <!-- Ordering metadata so RimSort's auto-sort keeps this mod pinned near the top (it silently
+       scattered the local mods once, 2026-08-22, breaking load-order-dependent fixes).
+       loadAfter: the self-sorting framework mods that legitimately sit above us.
+       loadBefore: our actual patch target (VFE Pirates) plus the early framework mods that
+       virtually every content mod loads after - anchoring us before them transitively pins us
+       before the whole content list. Sorters place us immediately after the DLC block. -->
   <loadAfter>
+    <li>zetrith.prepatcher</li>
     <li>brrainz.harmony</li>
+    <li>taranchuk.fastergameloading</li>
+    <li>brrainz.visualexceptions</li>
   </loadAfter>
+  <loadBefore>
+    <li>OskarPotocki.VFE.Pirates</li>
+    <li>OskarPotocki.VanillaFactionsExpanded.Core</li>
+    <li>SmashPhil.VehicleFramework</li>
+    <li>imranfish.xmlextensions</li>
+    <li>adaptive.storage.framework</li>
+    <li>ebsg.framework</li>
+    <li>owlchemist.fridgeutilities</li>
+    <li>vanillaexpanded.backgrounds</li>
+  </loadBefore>
 </ModMetaData>

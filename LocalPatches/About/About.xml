@@ -9,10 +9,21 @@
   <description>Local XML patch mod that suppresses startup/log errors from workshop mods without editing the workshop files directly.
 
 Reconstructed 2026-07-05 from the recovered project spec after the original (Windows) copy was lost. Each Patches/FixN_*.xml is self-contained and wrapped so failures are silent (success=Always / PatchOperationFindMod). MUST load LAST, after every other mod (enforce placement in RimSort).</description>
-  <!-- FindMod-wrapped patches don't need order, but Replace patches need their target defs to exist first,
-       so this mod must sit at the very bottom of the load order. loadAfter listed for clarity. -->
+  <!-- Ordering metadata so RimSort's auto-sort keeps this mod at the bottom (it silently scattered
+       the local mods once, 2026-08-22). loadAfter enumerates every mod a FixN patch targets - the
+       real correctness requirement behind "load last": our patches must apply after each target's
+       own defs and patches. Extend this list whenever a new Fix targets a new mod. Belt-and-braces:
+       in RimSort, right-click the mod and use its force-to-bottom rule as well. -->
   <loadAfter>
-    <li>ceteam.combatextended</li>
-    <li>cabbage.rimcities</li>
+    <li>CETeam.CombatExtended</li>
+    <li>Cabbage.RimCities</li>
+    <li>AOBA.USAC.Core</li>
+    <li>Veltaris.Mechtech</li>
+    <li>Ogre.NanoRepairTech</li>
+    <li>lee.theforce.standalone</li>
+    <li>Aoba.DeadManSwitch.Core</li>
+    <li>Rosalina.Mating.Press</li>
+    <li>Ushanka.GlittertechExpansion</li>
+    <li>VanillaExpanded.VanillaTraitsExpanded</li>
   </loadAfter>
 </ModMetaData>
