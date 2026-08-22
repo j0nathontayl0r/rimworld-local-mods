@@ -37,10 +37,15 @@
         <countRange>100~400</countRange>
       </li>
 
-      <!-- A hoarder converts wealth into more wealth: buys anything valuable. -->
-      <li Class="StockGenerator_BuyExpensiveSimple" />
-      <li Class="StockGenerator_BuyTradeTag"><tag>Art</tag></li>
-      <li Class="StockGenerator_BuyTradeTag"><tag>MusicalInstrument</tag></li>
+      <!-- The original bought EVERYTHING (confirmed in play, 2026-08-22, after the first
+           reconstruction only bought expensive/art items). A trader buys whatever any stock
+           generator handles, so a Root-category generator with zero stock count makes every
+           categorised thing tradeable without adding stock. -->
+      <li Class="StockGenerator_Category">
+        <categoryDef>Root</categoryDef>
+        <thingDefCountRange>0~0</thingDefCountRange>
+        <totalPriceRange>0~0</totalPriceRange>
+      </li>
 
     </stockGenerators>
   </TraderKindDef>
