@@ -21,6 +21,7 @@ namespace LocalCSharpFixes
     //   static void  Xenomorphtype.XMTLifeStagePatches+Patch_LifeStageWorker_Notify_LifeStageStarted.Postfix(Pawn, LifeStageDef)
     //   static ?     Xenomorphtype.XMTUtility.WitnessLarva(IntVec3 positionHeld, Map mapHeld, float, float, float, KnowledgeProfileDef)
     //   static float Vehicles.Patch_CaravanHandling.PawnMassUsageInVehicle(float massUsage, Pawn pawn)
+    //   static ?     Xenomorphtype.XMTUtility.TrySpawnPawnFromTarget(Pawn, Thing)
     internal static class ThirdPartyPatches
     {
         // VSIE: GetChairFor calls ClosestThingReachable(food.Position, ...) without checking food.Spawned.
@@ -135,5 +136,14 @@ namespace LocalCSharpFixes
             if (pawn == null) { __result = massUsage; return false; }
             return true;
         }
+
+        // XMT, third null-map path: LarvaRelease -> XMTUtility.TrySpawnPawnFromTarget hands
+        // GenSpawn.Spawn a null map when the larva host is held in a container (same drop-pod
+        // scenario as the WitnessLarva guard, different exit). Vehicle Framework's spawn hook then
+        // NREs ("Pawn larva could not be readjusted...") and vanilla logs "Tried to spawn ... in a
+        // null map" - two red errors, larva doesn't spawn either way. Skip unless the pawn or the
+        // target is actually on a map. __0/__1 index binding keeps this overload-proof.
+        public static bool XMT_TrySpawnPawn_Prefix(Pawn __0, Thing __1)
+            => (__0 != null && __0.Spawned) || (__1 != null && __1.Spawned);
     }
 }

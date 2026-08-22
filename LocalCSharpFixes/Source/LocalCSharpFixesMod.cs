@@ -39,6 +39,8 @@ namespace LocalCSharpFixes
                       nameof(ThirdPartyPatches.XMT_WitnessLarva_Prefix), requiredParam: "mapHeld");
             TryPrefix(h, "Vehicles.Patch_CaravanHandling", "PawnMassUsageInVehicle",
                       nameof(ThirdPartyPatches.VF_PawnMassUsage_Prefix));
+            TryPrefixAllOverloads(h, "Xenomorphtype.XMTUtility", "TrySpawnPawnFromTarget",
+                      nameof(ThirdPartyPatches.XMT_TrySpawnPawn_Prefix), requiredParam: null);
 
             GrimWorld40kFixes.Apply(h);
             VACLogSpamFixes.Apply(h);
@@ -57,7 +59,8 @@ namespace LocalCSharpFixes
         // For overloaded targets, where AccessTools.Method(type, name) throws AmbiguousMatchException
         // (seen: XMTUtility.WitnessLarva). Patches every overload carrying a parameter named
         // requiredParam, which is also the parameter the prefix binds by name - overloads without it
-        // couldn't bind and are skipped.
+        // couldn't bind and are skipped. Pass requiredParam: null to patch every overload (use with
+        // prefixes that bind by __0/__1 index, which always resolve).
         private static void TryPrefixAllOverloads(Harmony h, string typeName, string methodName, string patchMethod, string requiredParam)
         {
             try
@@ -68,14 +71,17 @@ namespace LocalCSharpFixes
                 foreach (var m in AccessTools.GetDeclaredMethods(t))
                 {
                     if (m.Name != methodName) continue;
-                    bool hasParam = false;
-                    foreach (var p in m.GetParameters())
-                        if (p.Name == requiredParam) { hasParam = true; break; }
-                    if (!hasParam) continue;
+                    if (requiredParam != null)
+                    {
+                        bool hasParam = false;
+                        foreach (var p in m.GetParameters())
+                            if (p.Name == requiredParam) { hasParam = true; break; }
+                        if (!hasParam) continue;
+                    }
                     h.Patch(m, prefix: new HarmonyMethod(typeof(ThirdPartyPatches), patchMethod));
                     patched++;
                 }
-                if (patched == 0) Log.Warning($"[LocalCSharpFixes] skip {typeName}.{methodName} (no overload with param '{requiredParam}')");
+                if (patched == 0) Log.Warning($"[LocalCSharpFixes] skip {typeName}.{methodName} (no matching overload{(requiredParam == null ? "" : $" with param '{requiredParam}'")})");
             }
             catch (Exception e)
             {
