@@ -13,8 +13,29 @@
       <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
     </li>
   </modDependencies>
+  <!-- Ordering metadata so RimSort's auto-sort keeps this mod at the bottom (it landed mid-list
+       after an auto-sort, 2026-08-22, which made TradersHaveMoney_Fixes' static ctor run BEFORE
+       Traders Have Money's and silently lose). loadAfter enumerates every mod our fixes target -
+       Harmony patch application order doesn't usually matter, but static-ctor ORDER does, and
+       loading after all targets guarantees ours run last. Extend this list whenever a new fix
+       targets a new mod. Belt-and-braces: RimSort's right-click force-to-bottom rule. -->
   <loadAfter>
     <li>brrainz.harmony</li>
+    <li>VanillaExpanded.VanillaSocialInteractionsExpanded</li>
+    <li>OskarPotocki.VFE.Pirates</li>
+    <li>OskarPotocki.VanillaFactionsExpanded.Core</li>
+    <li>Owlchemist.SmartFarming</li>
+    <li>Mehni.PickUpAndHaul</li>
+    <li>Mlie.ReinforcedMechanoid2</li>
+    <li>defaults.1trickPwnyta</li>
+    <li>AlexisPopcorn.VAC.base</li>
+    <li>niz.xenomorphtype</li>
+    <li>Grimworld.Framework</li>
+    <li>Grimworld.Core</li>
+    <li>HappyPurging.AgeofDarkness</li>
+    <li>VanillaExpanded.VanillaTradingExpanded</li>
+    <li>automatic.traderships</li>
+    <li>GodlyAnnihilator.TradersHaveMoney</li>
   </loadAfter>
   <description>Local Harmony patch mod that suppresses NREs / log spam and fixes small runtime bugs from workshop mods where an XML patch can't reach.
 
