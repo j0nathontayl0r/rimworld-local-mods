@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix21: The Dead Man's Switch x Combat Extended - startup errors:
+         CE ammo injector found no recipe named MakeAmmo_155mmHowitzerShell_Anti
+         CE ammo injector found no recipe named MakeUSH_Shell_ADP
+         (and the same for MakeShell_AntigrainWarhead when it appears)
+
+       ROOT CAUSE: DMS's bundled CE patch (3121742525, 1.6/CE/Patches/AmmoProduction.xml) adds
+       CE_AutoEnableCrafting_DMS_TableAmmoPrinter to the tradeTags of CE's ABSTRACT ammo bases so
+       its ammo printer can craft everything. Its xpath names AmmoBase, MediumAmmoBase and
+       HeavyAmmoBase, but only AmmoBase actually has a tradeTags node, so the tag lands there -
+       the root of every CE ammo def. RimWorld merges inherited list nodes, so every ammo def
+       inherits the tag, and CE's AmmoInjector (AmmoInjector.cs, "Toggle craftability") then
+       demands a RecipeDef named Make<defName> for each. Three defs in this modlist are
+       deliberately recipe-less, so each logs a red error at every startup:
+
+         Ammo_155mmHowitzerShell_Anti  - CE core, antigrain 155mm (loot/trade only by design)
+         Shell_AntigrainWarhead        - CE core, antigrain 81mm  (same)
+         USH_Shell_ADP                 - Ushankas Glittertech Expansion; CE's own ModPatches
+                                         compat rewrites it into an AmmoDef under
+                                         81mmMortarShellBase, no recipe
+
+       Same failure class as upstream CE issue #4408 (DMS + other victim mods). DMS's patch even
+       contains a commented-out Inherit=False guard for Shell_AntigrainWarhead - the author found
+       this exact problem, then disabled the guard.
+
+       FIX: set Inherit="False" on each def's tradeTags so the DMS tag never reaches it, then
+       re-add AmmoBase's legitimate tags verbatim (CE_AmmoInjector marks the def for AmmoInjector
+       processing, CE_Ammo puts it in ammo trader stock - dropping those would break trading).
+       Each def's own tags (CE_AutoEnableTrade_Sellable on the two CE shells) survive Inherit=False
+       untouched. Net effect: identical to the pre-DMS resolved tags. These three simply stay
+       un-craftable at the DMS ammo printer, which is vanilla-CE behaviour.
+
+       Deliberately NOT fixed by stripping the DMS tag from AmmoBase itself - that would disable
+       DMS's ammo-printer crafting for every ammo type in the game, which is its intended feature.
+
+       Both mods must be active; FindMod wrappers are NESTED because a multi-entry <mods> list is
+       OR, not AND (see Fix20). USH_Shell_ADP gets a third FindMod for its source mod.
+
+       success is NOT Always: the FindMod gates make this inert when a mod is absent, so an inner
+       failure can only mean CE renamed these defs or their tradeTags shape changed (master has
+       already split the ammo bases once) - hear about it rather than let it rot (Fix14 lesson). -->
+  <Operation Class="PatchOperationFindMod">
+    <mods>
+      <li>Combat Extended</li>
+    </mods>
+    <match Class="PatchOperationFindMod">
+      <mods>
+        <li>The Dead Man's Switch</li>
+      </mods>
+      <match Class="PatchOperationSequence">
+        <operations>
+
+          <li Class="PatchOperationAttributeSet">
+            <xpath>Defs/ThingDef[defName="Ammo_155mmHowitzerShell_Anti"]/tradeTags</xpath>
+            <attribute>Inherit</attribute>
+            <value>False</value>
+          </li>
+          <li Class="PatchOperationAdd">
+            <xpath>Defs/ThingDef[defName="Ammo_155mmHowitzerShell_Anti"]/tradeTags</xpath>
+            <value>
+              <li>CE_AmmoInjector</li>
+              <li>CE_Ammo</li>
+            </value>
+          </li>
+
+          <li Class="PatchOperationAttributeSet">
+            <xpath>Defs/ThingDef[defName="Shell_AntigrainWarhead"]/tradeTags</xpath>
+            <attribute>Inherit</attribute>
+            <value>False</value>
+          </li>
+          <li Class="PatchOperationAdd">
+            <xpath>Defs/ThingDef[defName="Shell_AntigrainWarhead"]/tradeTags</xpath>
+            <value>
+              <li>CE_AmmoInjector</li>
+              <li>CE_Ammo</li>
+            </value>
+          </li>
+
+          <!-- The AmmoDef that CE's ModPatches substitutes in has no tradeTags element at all,
+               so the whole element is added, inheritance-blocked, with AmmoBase's tags. -->
+          <li Class="PatchOperationFindMod">
+            <mods>
+              <li>Ushankas Glittertech Expansion</li>
+            </mods>
+            <match Class="PatchOperationAdd">
+              <xpath>Defs/ThingDef[defName="USH_Shell_ADP"]</xpath>
+              <value>
+                <tradeTags Inherit="False">
+                  <li>CE_AmmoInjector</li>
+                  <li>CE_Ammo</li>
+                </tradeTags>
+              </value>
+            </match>
+          </li>
+
+        </operations>
+      </match>
+    </match>
+  </Operation>
+</Patch>
