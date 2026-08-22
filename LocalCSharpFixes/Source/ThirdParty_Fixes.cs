@@ -18,6 +18,8 @@ namespace LocalCSharpFixes
     //   static void  Defaults.WorkPriorities.Patch_Pawn.Postfix(Pawn __instance)
     //   void         VEF.AnimalBehaviours.JobDriver_IngestWeird+<>c__DisplayClass20_0.<FinalizeIngestAnything>b__0()
     //   static void  VAC.VAC_Settings.PlayEventNotificationWithVolumeByDef(SoundDef, string)
+    //   static void  Xenomorphtype.XMTLifeStagePatches+Patch_LifeStageWorker_Notify_LifeStageStarted.Postfix(Pawn, LifeStageDef)
+    //   static ?     Xenomorphtype.XMTUtility.WitnessLarva(IntVec3 positionHeld, Map mapHeld, float, float, float, KnowledgeProfileDef)
     internal static class ThirdPartyPatches
     {
         // VSIE: GetChairFor calls ClosestThingReachable(food.Position, ...) without checking food.Spawned.
@@ -98,5 +100,27 @@ namespace LocalCSharpFixes
         // up in-play on the main thread, add that exact string to the VAC log filter as well.)
         public static bool VAC_PlayEventNotification_Prefix()
             => UnityData.IsInMainThread;
+
+        // Xenomorphtype (XMT): its postfix on LifeStageWorker.Notify_LifeStageStarted calls
+        // Find.FactionManager as its first action. That hook also fires during save LOADING —
+        // Pawn_NeedsTracker's constructor recalculates life stages while quest pawns are being
+        // scribed in Game.ExposeSmallComponents, before the World exists — so Find.FactionManager
+        // NREs, logging "Error while determining if <pawn> should have Need Chemical_Alcohol" once
+        // per affected quest pawn on every save load. Skip XMT's postfix while the world isn't
+        // loaded; its logic couldn't act in that state anyway, and needs are re-evaluated once the
+        // world is up. (Patching a patch is fine — Harmony detours the method's native entry, same
+        // as the Defaults fix above.)
+        public static bool XMT_LifeStageStarted_Prefix()
+            => Current.Game?.World?.factionManager != null;
+
+        // XMT again: XMTUtility.WitnessLarva(positionHeld, mapHeld, ...) passes mapHeld straight
+        // into GetFirstPawn/GetThingList without a null check. A pawn held in an unspawned context
+        // (seen: inside a DropPodIncoming when its larval-attachment hediff is removed -
+        // LarvaSqueeze on CompPostPostRemoved) has no map, so every such removal throws
+        // "Exception ticking DropPodIncoming..." and aborts the pod's tick. No map = nobody can
+        // witness; skip the call and leave the result at its default. Prefix binds mapHeld by
+        // name, which the runtime stack trace confirms against XMT's actual parameter list.
+        public static bool XMT_WitnessLarva_Prefix(Map mapHeld)
+            => mapHeld != null;
     }
 }

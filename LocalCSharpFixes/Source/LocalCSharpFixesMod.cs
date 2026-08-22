@@ -33,6 +33,10 @@ namespace LocalCSharpFixes
                       nameof(ThirdPartyPatches.VEF_IngestWeird_Finalizer));
             TryPrefix(h, "VAC.VAC_Settings", "PlayEventNotificationWithVolumeByDef",
                       nameof(ThirdPartyPatches.VAC_PlayEventNotification_Prefix));
+            TryPrefix(h, "Xenomorphtype.XMTLifeStagePatches+Patch_LifeStageWorker_Notify_LifeStageStarted", "Postfix",
+                      nameof(ThirdPartyPatches.XMT_LifeStageStarted_Prefix));
+            TryPrefix(h, "Xenomorphtype.XMTUtility", "WitnessLarva",
+                      nameof(ThirdPartyPatches.XMT_WitnessLarva_Prefix));
 
             GrimWorld40kFixes.Apply(h);
             VACLogSpamFixes.Apply(h);
