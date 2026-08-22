@@ -35,8 +35,10 @@ namespace LocalCSharpFixes
                       nameof(ThirdPartyPatches.VAC_PlayEventNotification_Prefix));
             TryPrefix(h, "Xenomorphtype.XMTLifeStagePatches+Patch_LifeStageWorker_Notify_LifeStageStarted", "Postfix",
                       nameof(ThirdPartyPatches.XMT_LifeStageStarted_Prefix));
-            TryPrefixAllOverloads(h, "Xenomorphtype.XMTUtility", "WitnessLarva",
-                      nameof(ThirdPartyPatches.XMT_WitnessLarva_Prefix), requiredParam: "mapHeld");
+            foreach (var witness in new[] { "WitnessLarva", "WitnessLarvaHorror", "WitnessHorror", "WitnessAcid",
+                                            "WitnessAcidHorror", "WitnessOvomorph", "WitnessOvomorphHorror", "WitnessPsychicHorror" })
+                TryPrefixAllOverloads(h, "Xenomorphtype.XMTUtility", witness,
+                          nameof(ThirdPartyPatches.XMT_Witness_Prefix), requiredParam: "mapHeld");
             TryPrefix(h, "Vehicles.Patch_CaravanHandling", "PawnMassUsageInVehicle",
                       nameof(ThirdPartyPatches.VF_PawnMassUsage_Prefix));
             TryPrefixAllOverloads(h, "Xenomorphtype.XMTUtility", "TrySpawnPawnFromTarget",

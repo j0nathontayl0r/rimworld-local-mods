@@ -19,7 +19,7 @@ namespace LocalCSharpFixes
     //   void         VEF.AnimalBehaviours.JobDriver_IngestWeird+<>c__DisplayClass20_0.<FinalizeIngestAnything>b__0()
     //   static void  VAC.VAC_Settings.PlayEventNotificationWithVolumeByDef(SoundDef, string)
     //   static void  Xenomorphtype.XMTLifeStagePatches+Patch_LifeStageWorker_Notify_LifeStageStarted.Postfix(Pawn, LifeStageDef)
-    //   static ?     Xenomorphtype.XMTUtility.WitnessLarva(IntVec3 positionHeld, Map mapHeld, float, float, float, KnowledgeProfileDef)
+    //   static ?     Xenomorphtype.XMTUtility.Witness*(IntVec3 positionHeld, Map mapHeld, float, float, float, KnowledgeProfileDef)  [8-method family]
     //   static float Vehicles.Patch_CaravanHandling.PawnMassUsageInVehicle(float massUsage, Pawn pawn)
     //   static ?     Xenomorphtype.XMTUtility.TrySpawnPawnFromTarget(Pawn, Thing)
     internal static class ThirdPartyPatches
@@ -115,14 +115,14 @@ namespace LocalCSharpFixes
         public static bool XMT_LifeStageStarted_Prefix()
             => Current.Game?.World?.factionManager != null;
 
-        // XMT again: XMTUtility.WitnessLarva(positionHeld, mapHeld, ...) passes mapHeld straight
-        // into GetFirstPawn/GetThingList without a null check. A pawn held in an unspawned context
-        // (seen: inside a DropPodIncoming when its larval-attachment hediff is removed -
-        // LarvaSqueeze on CompPostPostRemoved) has no map, so every such removal throws
-        // "Exception ticking DropPodIncoming..." and aborts the pod's tick. No map = nobody can
-        // witness; skip the call and leave the result at its default. Prefix binds mapHeld by
-        // name, which the runtime stack trace confirms against XMT's actual parameter list.
-        public static bool XMT_WitnessLarva_Prefix(Map mapHeld)
+        // XMT: the whole XMTUtility.Witness* family (WitnessLarva, WitnessHorror, WitnessAcid,
+        // WitnessOvomorph + *Horror variants, WitnessPsychicHorror) shares one signature and one
+        // bug: mapHeld goes straight into GetFirstPawn/GetThingList with no null check, so any
+        // trigger on an off-map pawn throws. Seen live twice - a larval attachment removed inside
+        // a DropPodIncoming ("Exception ticking DropPodIncoming...") and a building-morphing
+        // hediff tended on a WORLD pawn ("Exception tending to a world pawn..."). No map means
+        // nobody can witness; skip. Registered across the family by the mapHeld parameter.
+        public static bool XMT_Witness_Prefix(Map mapHeld)
             => mapHeld != null;
 
         // Vehicle Framework: PawnMassUsageInVehicle(massUsage, pawn) - a helper its transpiler
