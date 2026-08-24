@@ -23,6 +23,7 @@ namespace LocalCSharpFixes
     //   static float Vehicles.Patch_CaravanHandling.PawnMassUsageInVehicle(float massUsage, Pawn pawn)
     //   static ?     Xenomorphtype.XMTUtility.TrySpawnPawnFromTarget(Pawn, Thing)
     //   bool         CSL_Blackboard.ITab_CSL_BlackboardSchedule.IsTeachingDisabledForPawn(Pawn) and (Pawn, string&, bool)
+    //   static bool  CSL_SchoolTable.ITab_CSL_SchoolTableSchedule.IsLearningDisabledForPawn(Pawn) and (Pawn, string&, bool)
     internal static class ThirdPartyPatches
     {
         // VSIE: GetChairFor calls ClosestThingReachable(food.Position, ...) without checking food.Spawned.
@@ -148,13 +149,15 @@ namespace LocalCSharpFixes
             => (__0 != null && __0.Spawned) || (__1 != null && __1.Spawned);
 
         // Children, school and learning (Dylan.CSL): the blackboard schedule tab's
-        // IsTeachingDisabledForPawn calls Pawn_WorkSettings.WorkIsActive without checking the
-        // settings are initialized. The Children mod's area-restriction hook routes EVERY pawn's
-        // job start through it (Area_School cache), so each visitor/trade-ship pawn spams
-        // "<name> did not have work settings initialized" (seen: Kia, Poopy, Darklight). A pawn
-        // with no work settings can't teach: report disabled and skip. Binds by index + __args so
-        // one prefix covers both overloads ((Pawn) and (Pawn, string&, bool)); the priorities
-        // field null-check mirrors vanilla's ConfirmInitializedDebug condition.
+        // IsTeachingDisabledForPawn and the school table tab's IsLearningDisabledForPawn (same
+        // shape, same bug - both registered onto this prefix) call Pawn_WorkSettings.WorkIsActive
+        // without checking the settings are initialized. The Children mod's area-restriction hook
+        // routes EVERY pawn's job start through them (Area_School cache), so each visitor/
+        // trade-ship pawn spams "<name> did not have work settings initialized" (seen: Kia, Poopy,
+        // Darklight; Máté via the school table). A pawn with no work settings can't teach or
+        // learn: report disabled and skip. Binds by index + __args so one prefix covers both
+        // overloads ((Pawn) and (Pawn, string&, bool)); the priorities field null-check mirrors
+        // vanilla's ConfirmInitializedDebug condition.
         private static readonly System.Reflection.FieldInfo workPriorities =
             AccessTools.Field(typeof(Pawn_WorkSettings), "priorities");
 

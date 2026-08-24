@@ -45,6 +45,8 @@ namespace LocalCSharpFixes
                       nameof(ThirdPartyPatches.XMT_TrySpawnPawn_Prefix), requiredParam: null);
             TryPrefixAllOverloads(h, "CSL_Blackboard.ITab_CSL_BlackboardSchedule", "IsTeachingDisabledForPawn",
                       nameof(ThirdPartyPatches.CSL_TeachingDisabled_Prefix), requiredParam: null);
+            TryPrefixAllOverloads(h, "CSL_SchoolTable.ITab_CSL_SchoolTableSchedule", "IsLearningDisabledForPawn",
+                      nameof(ThirdPartyPatches.CSL_TeachingDisabled_Prefix), requiredParam: null);
 
             GrimWorld40kFixes.Apply(h);
             VACLogSpamFixes.Apply(h);
