@@ -39,6 +39,7 @@
     <li>Dylan.CSL</li>
     <li>GodlyAnnihilator.TradersHaveMoney</li>
     <li>PeteTimesSix.ResearchReinvented</li>
+    <li>Woolstrand.RealRuins</li>
   </loadAfter>
   <description>Local Harmony patch mod that suppresses NREs / log spam and fixes small runtime bugs from workshop mods where an XML patch can't reach.
 
