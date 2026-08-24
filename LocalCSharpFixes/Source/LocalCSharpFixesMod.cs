@@ -50,6 +50,7 @@ namespace LocalCSharpFixes
             VACLogSpamFixes.Apply(h);
             VTECompanyFixes.Apply(h);
             TraderShipsFixes.Apply(h);
+            ResearchReinventedFixes.Apply(h);
 
             Log.Message("[LocalCSharpFixes] Harmony patches applied.");
         }
