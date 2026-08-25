@@ -55,6 +55,7 @@ namespace LocalCSharpFixes
             ResearchReinventedFixes.Apply(h);
             RealRuinsFixes.Apply(h);
             TraitsExpandedFixes.Apply(h);
+            CaptureExpansionFixes.Apply(h);
 
             Log.Message("[LocalCSharpFixes] Harmony patches applied.");
         }
