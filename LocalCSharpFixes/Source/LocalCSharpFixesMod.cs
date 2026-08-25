@@ -51,6 +51,8 @@ namespace LocalCSharpFixes
                       nameof(ThirdPartyPatches.CE_HuntReservation_Prefix));
             TryPrefix(h, "ColonyManagerRedux.Building_AIManager", "Tick",
                       nameof(ThirdPartyPatches.CMR_AIManagerTick_Prefix));
+            TryPrefix(h, "CombatExtended.CompMechAmmo", "TryMakeAmmoJob",
+                      nameof(ThirdPartyPatches.CE_MechAmmoJob_Prefix));
 
             GrimWorld40kFixes.Apply(h);
             VACLogSpamFixes.Apply(h);

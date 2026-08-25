@@ -26,6 +26,7 @@ namespace LocalCSharpFixes
     //   static bool  CSL_SchoolTable.ITab_CSL_SchoolTableSchedule.IsLearningDisabledForPawn(Pawn) and (Pawn, string&, bool)
     //   bool         CombatExtended.JobDriver_Hunt.TryMakePreToilReservations(bool errorOnFailed)
     //   void         ColonyManagerRedux.Building_AIManager.Tick()   (protected override)
+    //   void         CombatExtended.CompMechAmmo.TryMakeAmmoJob(bool forced = false)
     internal static class ThirdPartyPatches
     {
         // VSIE: GetChairFor calls ClosestThingReachable(food.Position, ...) without checking food.Spawned.
@@ -192,5 +193,14 @@ namespace LocalCSharpFixes
         // ticking <carrier> ... at Verse.CompGlower.UpdateLit"; observed 2026-08-26 via Daag
         // carrying one). An unspawned manager has nothing to manage: skip the tick entirely.
         public static bool CMR_AIManagerTick_Prefix(Thing __instance) => __instance.Spawned;
+
+        // Combat Extended: CompMechAmmo.CompTickInterval -> TryMakeAmmoJob gates on IsWorkable(),
+        // which checks faction and equipped weapon but never Spawned. A player mech ticking as a
+        // WORLD pawn (in a caravan or otherwise off-map) then calls MTAAmmoUtility.FindBestAmmo ->
+        // GenClosest.ClosestThingReachable with pawn.Map == null -> NRE ("Exception ticking world
+        // pawn IM_Mech_Bombardier..."; observed 2026-08-26; vanilla then suppresses that pawn's
+        // errors). An unspawned mech can't run a take-ammo job anyway: skip. Also inert for the
+        // forced gizmo path, which only exists for spawned mechs.
+        public static bool CE_MechAmmoJob_Prefix(ThingComp __instance) => __instance.parent?.Spawned ?? false;
     }
 }
