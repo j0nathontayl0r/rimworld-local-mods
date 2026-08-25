@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix22: "Invalid count: 0, setting to 1. Job was DoBill ... B = Thing_XMT_Medicine_Jelly
+       ... workGiverDef: DoBillsCook" (observed 2026-08-26).
+
+       ROOT CAUSE: Alien | Rimworld's XMT_Medicine_Jelly (Products_Horror.xml) is ingestible and
+       sits in the AnimalProductRaw thing category (a child of FoodRaw), so vanilla meal bills
+       accept it as a nutrition ingredient - but its statBases define no Nutrition stat, and the
+       vanilla default is 0. The nutrition-based ingredient counting then computes a required
+       count of 0 for it, the cook hauls it anyway (Toils_Haul.ErrorCheckForCarry clamps 0 to 1
+       with a red error), and a unit of what is really a medicine/drug item gets wasted into a
+       meal it contributes nothing to. Recurs whenever a cook bill can reach a stockpiled jelly.
+
+       FIX: drop the AnimalProductRaw category so meal bills' ingredient filters (which match by
+       FoodRaw categories) can never select it. Everything else about the item is unaffected:
+       it stays in the Medicine category (storage/trading), stays ingestible as a joy/drug item
+       (preferability is already NeverForNutrition, so pawns never auto-ate it for food), the
+       horrors that produce it as milkDef are category-independent, and the XMT recipes that
+       consume it list it by thingDef, not category.
+
+       success is NOT Always: if the def or its thingCategories shape changes in a mod update,
+       hear about it rather than let the patch rot (Fix14 lesson). -->
+  <Operation Class="PatchOperationFindMod">
+    <mods>
+      <li>Alien | Rimworld</li>
+    </mods>
+    <match Class="PatchOperationRemove">
+      <xpath>Defs/ThingDef[defName="XMT_Medicine_Jelly"]/thingCategories/li[text()="AnimalProductRaw"]</xpath>
+    </match>
+  </Operation>
+</Patch>
