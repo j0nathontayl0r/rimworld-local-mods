@@ -86,6 +86,32 @@ namespace LocalCSharpFixes
         }
     }
 
+    // Vanilla: JobGiver_AIDefendEscortee.GetDefendee casts duty.focus to Thing. A caravan animal
+    // can transiently hold an escort-family duty whose focus is a bare cell (observed 2026-08-26:
+    // Giddy-Up mount Doedicurus in a trade caravan, focus near the chill spot -- Giddy-Up's own
+    // suppression prefix for these job givers only guards while the mount is reserved, and the
+    // rider's dismount clears that). Result: two red errors per job search ("Casted
+    // LocalTargetInfo to Thing but it had cell ..." + "JobGiver_AIDefendEscortee has null
+    // defendee"), then vanilla returns null and the think tree moves on anyway. Make the decline
+    // quiet: same null result, no logs. Only the Escortee subclass reads focus this way, so other
+    // JobGiver_AIDefendPawn subclasses are untouched.
+    // Signatures verified against the installed 1.6 DLL:
+    //   protected override Job RimWorld.JobGiver_AIDefendPawn.TryGiveJob(Pawn pawn)
+    //   protected override Pawn RimWorld.JobGiver_AIDefendEscortee.GetDefendee(Pawn pawn)   ((Thing)pawn.mindState.duty.focus)
+    [HarmonyPatch(typeof(JobGiver_AIDefendPawn), "TryGiveJob")]
+    internal static class JobGiverAIDefendPawn_TryGiveJob_CellFocusGuard
+    {
+        private static bool Prefix(JobGiver_AIDefendPawn __instance, Pawn pawn, ref Job __result)
+        {
+            if (__instance is JobGiver_AIDefendEscortee && !(pawn?.mindState?.duty?.focus.HasThing ?? false))
+            {
+                __result = null;
+                return false;
+            }
+            return true;
+        }
+    }
+
     // Vanilla (Odyssey): CompUniqueWeapon.PostExposeData scribes its ColorDef with
     // Scribe_Defs.Look(ref color, "color") -- the same node name CompColorable saves its RGBA Color
     // under. On a thing carrying both comps (seen 2026-08-25: Star Wars - The Force unique
