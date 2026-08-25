@@ -15,10 +15,26 @@ namespace LocalCSharpFixes
     // ("Cannot register ... id already used") at save/load. Sanitise each restored pawn: drop
     // part-less injuries (untendable dead weight) and re-ID every hediff. Safe here: nothing
     // references the fresh hediffs by ID yet (the combat-log link is an object WeakReference).
-    // Signatures verified against the installed 1.6 DLL:
+    // Second RealRuins scribe bug, observed 2026-08-25: BakedLogEntry (the battle-log lines baked
+    // into blueprints) is constructed during blueprint restore while a Scribe operation is active,
+    // and the vanilla LogEntry ctor only assigns a fresh logID when Scribe.mode == Inactive -- so
+    // every baked entry keeps logID 0 (all 108 in the current save). GetUniqueLoadID() is
+    // "LogEntry_{ticksAbs}_{logID}", and RealRuins date-shifts ticksAbs, so two entries baked with
+    // the same shift collide ("Cannot register RealRuins.BakedLogEntry ... Id already used") on
+    // every load. Two patches, mirroring the VTE company-id fix:
+    //   - 3-arg ctor postfix: assign a fresh logID whenever the base ctor skipped it.
+    //   - ExposeData postfix (PostLoadInit): re-ID zero-ID entries already baked into a save. Safe
+    //     post cross-ref: references hold live objects by then. The duplicate-registration error
+    //     fires once more when loading an old save (registration precedes PostLoadInit), then the
+    //     next save is clean.
+    // Signatures verified against the installed 1.6 DLLs:
     //   Pawn RealRuins.PawnRestoreUtility.MakePawnWithRawXml(string xml)   (internal, returns null on failure)
+    //   RealRuins.BakedLogEntry..ctor(string logString, Pawn pawn, long dateShift)
+    //   Verse.LogEntry.logID   (protected int; ctor guard: if (Scribe.mode == LoadSaveMode.Inactive) logID = GetNextLogID())
     public static class RealRuinsFixes
     {
+        private static AccessTools.FieldRef<LogEntry, int> logIdField;
+
         public static void Apply(Harmony h)
         {
             var t = AccessTools.TypeByName("RealRuins.PawnRestoreUtility");
@@ -34,6 +50,47 @@ namespace LocalCSharpFixes
                 return;
             }
             h.Patch(m, postfix: new HarmonyMethod(typeof(RealRuinsFixes), nameof(SanitizeRestoredPawn)));
+
+            var tLog = AccessTools.TypeByName("RealRuins.BakedLogEntry");
+            var ctor = tLog == null ? null : AccessTools.Constructor(tLog, new[] { typeof(string), typeof(Pawn), typeof(long) });
+            var expose = tLog == null ? null : AccessTools.Method(tLog, "ExposeData");
+            try { logIdField = AccessTools.FieldRefAccess<LogEntry, int>("logID"); } catch { logIdField = null; }
+            if (ctor == null || expose == null || logIdField == null)
+            {
+                Log.Warning("[LocalCSharpFixes] skip RealRuins baked-log-id fix (member not found; mod layout changed?)");
+                return;
+            }
+            h.Patch(ctor, postfix: new HarmonyMethod(typeof(RealRuinsFixes), nameof(AssignFreshLogId)));
+            h.Patch(expose, postfix: new HarmonyMethod(typeof(RealRuinsFixes), nameof(HealZeroLogId)));
+        }
+
+        // The base LogEntry ctor only assigns an id while no Scribe operation is running; RealRuins
+        // bakes entries mid-scribe, so cover the gap. When the base ctor already assigned one,
+        // skip -- don't burn ids.
+        public static void AssignFreshLogId(LogEntry __instance)
+        {
+            try
+            {
+                if (Scribe.mode != LoadSaveMode.Inactive)
+                    logIdField(__instance) = Find.UniqueIDsManager.GetNextLogID();
+            }
+            catch (Exception e)
+            {
+                Log.Warning($"[LocalCSharpFixes] RealRuins AssignFreshLogId failed: {e.Message}");
+            }
+        }
+
+        public static void HealZeroLogId(LogEntry __instance)
+        {
+            try
+            {
+                if (Scribe.mode == LoadSaveMode.PostLoadInit && logIdField(__instance) == 0)
+                    logIdField(__instance) = Find.UniqueIDsManager.GetNextLogID();
+            }
+            catch (Exception e)
+            {
+                Log.Warning($"[LocalCSharpFixes] RealRuins HealZeroLogId failed: {e.Message}");
+            }
         }
 
         public static void SanitizeRestoredPawn(Pawn __result)
