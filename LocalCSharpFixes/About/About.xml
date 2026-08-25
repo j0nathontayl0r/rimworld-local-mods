@@ -44,6 +44,7 @@
     <li>ferny.CaptureExpansion</li>
     <li>CETeam.CombatExtended</li>
     <li>pb3n.SimpleLeadership</li>
+    <li>co.uk.epicguru.meleeanimation</li>
   </loadAfter>
   <description>Local Harmony patch mod that suppresses NREs / log spam and fixes small runtime bugs from workshop mods where an XML patch can't reach.
 

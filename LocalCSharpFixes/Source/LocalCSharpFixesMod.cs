@@ -58,6 +58,7 @@ namespace LocalCSharpFixes
             RealRuinsFixes.Apply(h);
             StaleSaveRefFixes.Apply(h);
             CaptureExpansionFixes.Apply(h);
+            MeleeAnimationFixes.Apply(h);
 
             Log.Message("[LocalCSharpFixes] Harmony patches applied.");
         }
