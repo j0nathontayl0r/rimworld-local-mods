@@ -1,6 +1,7 @@
 using System;
 using HarmonyLib;
 using RimWorld;
+using UnityEngine;
 using Verse;
 using Verse.AI;
 
@@ -82,6 +83,34 @@ namespace LocalCSharpFixes
             if (value && t?.def != null && t.def.defName == "AA_BlackTruffles")
                 return false; // skip forbidding
             return true;
+        }
+    }
+
+    // Vanilla (Odyssey): CompUniqueWeapon.PostExposeData scribes its ColorDef with
+    // Scribe_Defs.Look(ref color, "color") -- the same node name CompColorable saves its RGBA Color
+    // under. On a thing carrying both comps (seen 2026-08-25: Star Wars - The Force unique
+    // lightsaber "The Lightsaber of Legend"), both comps read the FIRST <color> node on load and
+    // CompColorable throws FormatException parsing the defName "UniqueWeapon_Purple" as a Color --
+    // one red error per such weapon on every save load. Fall back in ParseHelper.ParseColor: a
+    // colour literal always contains '(' ("RGBA(...)" or "(r,g,b)"), a bare ColorDef defName never
+    // does, so resolve the string via DefDatabase and return that def's colour. Strings matching no
+    // ColorDef fall through to the original (and its usual error). During def XML loading the
+    // database is empty, so the lookup misses and def parsing is unaffected.
+    // Signatures verified against the installed 1.6 DLL:
+    //   static Color Verse.ParseHelper.ParseColor(string str)
+    //   RimWorld.ColorDef.color   (public Color field)
+    [HarmonyPatch(typeof(ParseHelper), nameof(ParseHelper.ParseColor))]
+    internal static class ParseHelper_ParseColor_ColorDefFallback
+    {
+        private static bool Prefix(string str, ref Color __result)
+        {
+            if (string.IsNullOrEmpty(str) || str.IndexOf('(') >= 0)
+                return true;
+            var def = DefDatabase<ColorDef>.GetNamedSilentFail(str);
+            if (def == null)
+                return true;
+            __result = def.color;
+            return false; // skip the original; it could only throw
         }
     }
 
