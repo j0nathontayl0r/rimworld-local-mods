@@ -43,6 +43,45 @@ namespace LocalCSharpFixes
                 return;
             }
             h.Patch(m, postfix: new HarmonyMethod(typeof(CaptureExpansionFixes), nameof(SuppressUntouchableRestrain)));
+
+            var driver = AccessTools.TypeByName("CaptureExpansion.JobDriver_RestrainPrisonerToBed");
+            var reservations = driver == null ? null : AccessTools.Method(driver, "TryMakePreToilReservations");
+            if (reservations == null)
+            {
+                Log.Warning("[LocalCSharpFixes] skip Capture Expansion restrain-release fix (TryMakePreToilReservations not found; mod layout changed?)");
+                return;
+            }
+            h.Patch(reservations, postfix: new HarmonyMethod(typeof(CaptureExpansionFixes), nameof(ReleaseBedOnFastPath)));
+        }
+
+        // Second restrain bug, exposed once the geometry gate above lets the job run (observed
+        // 2026-08-26): the driver's prisoner-already-in-bed fast path (JumpIf to
+        // goToInteractionCell) jumps over its own Toils_Reserve.Release(B) toil, so the warden
+        // holds the bed reservation from TryMakePreToilReservations all the way through WaitWith.
+        // WaitWith's initAction ForceWaits the prisoner, and vanilla 1.6 ForceWait starts a
+        // LayDown job for a pawn in bed (PawnUtility.ForceWait: if (pawn.InBed()) def = LayDown*),
+        // which then can't reserve the prisoner's own bed -> red "Could not reserve ... for job
+        // LayDown" against the warden's stale claim, once per restrain. Mirror what the mod's
+        // carry path does at the Release toil: when the prisoner already lies in the target bed,
+        // drop the warden's bed reservation right after it's made. The prisoner reservation
+        // (target A) stays, so no second warden can take the same restrain job.
+        public static void ReleaseBedOnFastPath(JobDriver __instance, bool __result)
+        {
+            try
+            {
+                if (!__result)
+                    return;
+                var job = __instance.job;
+                var prisoner = job?.targetA.Thing as Pawn;
+                var bed = job?.targetB.Thing as Building_Bed;
+                if (prisoner == null || bed == null || RestUtility.CurrentBed(prisoner) != bed)
+                    return;
+                __instance.pawn.Map?.reservationManager.Release(bed, __instance.pawn, job);
+            }
+            catch (Exception e)
+            {
+                Log.Warning($"[LocalCSharpFixes] Capture Expansion ReleaseBedOnFastPath failed: {e.Message}");
+            }
         }
 
         public static void SuppressUntouchableRestrain(Pawn pawn, Thing t, ref Job __result)
