@@ -47,6 +47,8 @@ namespace LocalCSharpFixes
                       nameof(ThirdPartyPatches.CSL_TeachingDisabled_Prefix), requiredParam: null);
             TryPrefixAllOverloads(h, "CSL_SchoolTable.ITab_CSL_SchoolTableSchedule", "IsLearningDisabledForPawn",
                       nameof(ThirdPartyPatches.CSL_TeachingDisabled_Prefix), requiredParam: null);
+            TryPrefix(h, "CombatExtended.JobDriver_Hunt", "TryMakePreToilReservations",
+                      nameof(ThirdPartyPatches.CE_HuntReservation_Prefix));
 
             GrimWorld40kFixes.Apply(h);
             VACLogSpamFixes.Apply(h);

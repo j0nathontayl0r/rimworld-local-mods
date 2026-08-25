@@ -24,6 +24,7 @@ namespace LocalCSharpFixes
     //   static ?     Xenomorphtype.XMTUtility.TrySpawnPawnFromTarget(Pawn, Thing)
     //   bool         CSL_Blackboard.ITab_CSL_BlackboardSchedule.IsTeachingDisabledForPawn(Pawn) and (Pawn, string&, bool)
     //   static bool  CSL_SchoolTable.ITab_CSL_SchoolTableSchedule.IsLearningDisabledForPawn(Pawn) and (Pawn, string&, bool)
+    //   bool         CombatExtended.JobDriver_Hunt.TryMakePreToilReservations(bool errorOnFailed)
     internal static class ThirdPartyPatches
     {
         // VSIE: GetChairFor calls ClosestThingReachable(food.Position, ...) without checking food.Spawned.
@@ -167,6 +168,19 @@ namespace LocalCSharpFixes
             if (ws != null && (workPriorities == null || workPriorities.GetValue(ws) != null)) return true;
             if (__args.Length > 1) __args[1] = "";
             __result = true;
+            return false;
+        }
+
+        // Combat Extended: JobDriver_Hunt.TryMakePreToilReservations hardcodes errorOnFailed: true
+        // in its Reserve call instead of forwarding the parameter (vanilla forwards it). StartJob
+        // passes errorOnFailed = !fromQueue, so a queued hunt losing the reservation race to
+        // another hunter -- a perfectly normal outcome vanilla fails silently -- logs a red
+        // "Could not reserve ... for job Hunt" (observed 2026-08-25: queued hunter Pusca vs active
+        // hunter Shen on one designated animal). Replace the one-line body with the flag forwarded;
+        // behaviour is otherwise identical.
+        public static bool CE_HuntReservation_Prefix(JobDriver __instance, bool errorOnFailed, ref bool __result)
+        {
+            __result = __instance.pawn.Reserve(__instance.job.GetTarget(TargetIndex.A), __instance.job, 1, -1, null, errorOnFailed);
             return false;
         }
     }
