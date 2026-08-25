@@ -54,6 +54,7 @@ namespace LocalCSharpFixes
             TraderShipsFixes.Apply(h);
             ResearchReinventedFixes.Apply(h);
             RealRuinsFixes.Apply(h);
+            TraitsExpandedFixes.Apply(h);
 
             Log.Message("[LocalCSharpFixes] Harmony patches applied.");
         }
