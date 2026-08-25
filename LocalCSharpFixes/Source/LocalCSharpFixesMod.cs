@@ -49,6 +49,8 @@ namespace LocalCSharpFixes
                       nameof(ThirdPartyPatches.CSL_TeachingDisabled_Prefix), requiredParam: null);
             TryPrefix(h, "CombatExtended.JobDriver_Hunt", "TryMakePreToilReservations",
                       nameof(ThirdPartyPatches.CE_HuntReservation_Prefix));
+            TryPrefix(h, "ColonyManagerRedux.Building_AIManager", "Tick",
+                      nameof(ThirdPartyPatches.CMR_AIManagerTick_Prefix));
 
             GrimWorld40kFixes.Apply(h);
             VACLogSpamFixes.Apply(h);

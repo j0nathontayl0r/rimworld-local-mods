@@ -25,6 +25,7 @@ namespace LocalCSharpFixes
     //   bool         CSL_Blackboard.ITab_CSL_BlackboardSchedule.IsTeachingDisabledForPawn(Pawn) and (Pawn, string&, bool)
     //   static bool  CSL_SchoolTable.ITab_CSL_SchoolTableSchedule.IsLearningDisabledForPawn(Pawn) and (Pawn, string&, bool)
     //   bool         CombatExtended.JobDriver_Hunt.TryMakePreToilReservations(bool errorOnFailed)
+    //   void         ColonyManagerRedux.Building_AIManager.Tick()   (protected override)
     internal static class ThirdPartyPatches
     {
         // VSIE: GetChairFor calls ClosestThingReachable(food.Position, ...) without checking food.Spawned.
@@ -183,5 +184,13 @@ namespace LocalCSharpFixes
             __result = __instance.pawn.Reserve(__instance.job.GetTarget(TargetIndex.A), __instance.job, 1, -1, null, errorOnFailed);
             return false;
         }
+
+        // Colony Manager Redux: Building_AIManager.Tick assumes it's spawned -- it flips Powered
+        // from the power comp, whose setter drives CompGlower.UpdateLit(Map), and later calls
+        // Manager.For(Map). While the building is minified and carried (a pawn hauling or a raider
+        // stealing it), containers still tick it and Map is null, so every tick NREs ("Exception
+        // ticking <carrier> ... at Verse.CompGlower.UpdateLit"; observed 2026-08-26 via Daag
+        // carrying one). An unspawned manager has nothing to manage: skip the tick entirely.
+        public static bool CMR_AIManagerTick_Prefix(Thing __instance) => __instance.Spawned;
     }
 }
