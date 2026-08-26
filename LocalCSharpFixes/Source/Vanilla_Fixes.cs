@@ -86,6 +86,50 @@ namespace LocalCSharpFixes
         }
     }
 
+    // Vanilla (Biotech): Bill_ResurrectMech.CreateProducts dereferences
+    // Gestator.ResurrectingMechCorpse unguarded. If the corpse leaves the gestator's container
+    // mid-cycle (cause unpinned; observed 2026-08-26 on a large mech gestator), the forming cycle
+    // still completes: BillTick sets state = Formed, Notify_FormingCompleted NREs, and the
+    // gestator is left bricked -- a Formed bill with neither corpse nor mech inside that the
+    // mechanitor can never collect. Two patches:
+    //   - Notify_FormingCompleted prefix: corpse gone at completion -> reset the bill to
+    //     Gathering (vanilla's own Reset) so it collects a new corpse, instead of throwing.
+    //   - BillTick prefix: heal a bill already bricked in a save -- Formed with an empty
+    //     container -> same reset. Healthy Formed bills hold the resurrected mech, so the check
+    //     never touches them.
+    // Signatures verified against the installed 1.6 DLL:
+    //   void RimWorld.Building_MechGestator.Notify_FormingCompleted()   (activeBill.CreateProducts() first)
+    //   Corpse RimWorld.Building_MechGestator.ResurrectingMechCorpse / Pawn GestatingMech   (container scans)
+    //   void RimWorld.Bill_Autonomous.Reset()   (ingredients.Clear(); state = Gathering; Bill_Mech adds cycle/boundPawn reset)
+    //   Building_MechGestator RimWorld.Bill_Mech.Gestator => (Building_MechGestator)billStack.billGiver
+    [HarmonyPatch(typeof(Building_MechGestator), nameof(Building_MechGestator.Notify_FormingCompleted))]
+    internal static class MechGestator_FormingCompleted_MissingCorpseGuard
+    {
+        private static bool Prefix(Building_MechGestator __instance)
+        {
+            if (!(__instance.ActiveBill is Bill_ResurrectMech bill) || __instance.ResurrectingMechCorpse != null)
+                return true;
+            Log.Warning($"[LocalCSharpFixes] {__instance.LabelCap} finished a resurrection cycle with no corpse inside; resetting the bill to gather a new one.");
+            bill.Reset();
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(Bill_Mech), nameof(Bill_Mech.BillTick))]
+    internal static class BillMech_BillTick_HealBrickedResurrection
+    {
+        private static void Prefix(Bill_Mech __instance)
+        {
+            if (__instance.State != FormingState.Formed || !(__instance is Bill_ResurrectMech))
+                return;
+            var gestator = __instance.Gestator;
+            if (gestator == null || gestator.GestatingMech != null || gestator.ResurrectingMechCorpse != null)
+                return;
+            Log.Warning($"[LocalCSharpFixes] {gestator.LabelCap} had a formed resurrection bill with an empty container; resetting the bill to gather a new corpse.");
+            __instance.Reset();
+        }
+    }
+
     // Vanilla: Pawn_EquipmentTracker.TryDropEquipment funnels into ThingOwner.TryDrop, which logs
     // "container tried to drop X which it didn't contain" and returns false when the weapon
     // already left the tracker. With many mods swapping equipment mid-job (this modlist has 9
