@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix23: "Caravan demand incident couldn't generate any enemies even though min points have
+       been checked. faction=...(VFEP_Junkers) ... points=617" (observed 2026-08-26).
+
+       ROOT CAUSE: VFE - Pirates' Junkers faction has four Combat pawnGroupMakers, but two of
+       them contain no kind cheap enough to generate at ordinary threat points. The faction's
+       maxPawnCostPerTotalPointsCurve caps the per-pawn cost at ~93 for a ~617-point incident,
+       and the "melee only" maker holds only VFEP_Hussar (combatPower 600, needs ~5800+ points)
+       while the "strong mix" maker's cheapest kind is VFEP_Veteran (400). When the game rolls
+       either maker (commonality 30 + 10 of 100) for a caravan demand - or any other Combat
+       group - at sub-endgame points, generation returns zero pawns: a red error and the ambush
+       silently never happens.
+
+       FIX: add VFEP_Scrapper (combatPower 65) at selection weight 1 to every Junkers Combat
+       maker that lacks it, so each maker can always field at least junk chaff. At high points
+       the weight-1 scrapper is a rounding error next to weight 8-10 elites, so intended raid
+       compositions are effectively unchanged; at low points the incident produces a scrapper
+       band instead of firing blank.
+
+       The xpath deliberately matches BOTH deficient makers (Combat makers without a scrapper
+       option); PatchOperationAdd applies to every matched node.
+
+       success is NOT Always: if VFE-P renames the kinds or restructures the makers, hear about
+       it rather than let the patch rot (Fix14 lesson). -->
+  <Operation Class="PatchOperationFindMod">
+    <mods>
+      <li>Vanilla Factions Expanded - Pirates</li>
+    </mods>
+    <match Class="PatchOperationAdd">
+      <xpath>Defs/FactionDef[defName="VFEP_Junkers"]/pawnGroupMakers/li[kindDef="Combat" and not(options/VFEP_Scrapper)]/options</xpath>
+      <value>
+        <VFEP_Scrapper>1</VFEP_Scrapper>
+      </value>
+    </match>
+  </Operation>
+</Patch>
