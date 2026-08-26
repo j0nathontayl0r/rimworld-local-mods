@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using HarmonyLib;
 using RimWorld;
 using RimWorld.Planet;
@@ -27,6 +29,7 @@ namespace LocalCSharpFixes
     //   bool         CombatExtended.JobDriver_Hunt.TryMakePreToilReservations(bool errorOnFailed)
     //   void         ColonyManagerRedux.Building_AIManager.Tick()   (protected override)
     //   void         CombatExtended.CompMechAmmo.TryMakeAmmoJob(bool forced = false)
+    //   static IEnumerable<PawnKindDef> ColonyManagerRedux.Managers.Utilities_Hunting.GetMapPawnKindDefs(Map? map, bool animalsOnly = true)
     internal static class ThirdPartyPatches
     {
         // VSIE: GetChairFor calls ClosestThingReachable(food.Position, ...) without checking food.Spawned.
@@ -202,5 +205,20 @@ namespace LocalCSharpFixes
         // errors). An unspawned mech can't run a take-ammo job anyway: skip. Also inert for the
         // forced gizmo path, which only exists for spawned mechs.
         public static bool CE_MechAmmoJob_Prefix(ThingComp __instance) => __instance.parent?.Spawned ?? false;
+
+        // Colony Manager Redux: Utilities_Hunting.GetMapPawnKindDefs guards a null map but then
+        // reads map.Biome, which indexes the world grid by the map's tile -- and throws
+        // ArgumentOutOfRangeException for a map with no valid tile. ReGrowth's SavedCamp
+        // constructs such a transient map during every game save, so each save logged "Could not
+        // create ManagerJob instance for CM_HuntingManager" (observed 2026-08-26). Same failure
+        // class as the SmartFarming pocket-map guard above: no tile means no biome and no wild
+        // animals -- return the empty set.
+        public static bool CMR_MapPawnKinds_Prefix(Map map, ref IEnumerable<PawnKindDef> __result)
+        {
+            if (map == null || map.Tile.Valid)
+                return true;
+            __result = Enumerable.Empty<PawnKindDef>();
+            return false;
+        }
     }
 }

@@ -53,6 +53,8 @@ namespace LocalCSharpFixes
                       nameof(ThirdPartyPatches.CMR_AIManagerTick_Prefix));
             TryPrefix(h, "CombatExtended.CompMechAmmo", "TryMakeAmmoJob",
                       nameof(ThirdPartyPatches.CE_MechAmmoJob_Prefix));
+            TryPrefix(h, "ColonyManagerRedux.Managers.Utilities_Hunting", "GetMapPawnKindDefs",
+                      nameof(ThirdPartyPatches.CMR_MapPawnKinds_Prefix));
 
             GrimWorld40kFixes.Apply(h);
             VACLogSpamFixes.Apply(h);
