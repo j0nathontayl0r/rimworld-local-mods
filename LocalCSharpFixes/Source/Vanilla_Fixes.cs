@@ -86,6 +86,28 @@ namespace LocalCSharpFixes
         }
     }
 
+    // Vanilla: Pawn_EquipmentTracker.TryDropEquipment funnels into ThingOwner.TryDrop, which logs
+    // "container tried to drop X which it didn't contain" and returns false when the weapon
+    // already left the tracker. With many mods swapping equipment mid-job (this modlist has 9
+    // patches on JobDriver_DropEquipment's drop toil alone), a drop job losing that race is
+    // routine (observed 2026-08-26: AC_Gun_Autorevolver already gone when the toil fired).
+    // Return the same false without reaching the error log. The invalid-cell error path and all
+    // genuine drops are untouched.
+    // Signatures verified against the installed 1.6 DLL:
+    //   bool Verse.Pawn_EquipmentTracker.TryDropEquipment(ThingWithComps eq, out ThingWithComps resultingEq, IntVec3 pos, bool forbid = true)
+    [HarmonyPatch(typeof(Pawn_EquipmentTracker), nameof(Pawn_EquipmentTracker.TryDropEquipment))]
+    internal static class PawnEquipmentTracker_TryDropEquipment_NotContainedGuard
+    {
+        private static bool Prefix(Pawn_EquipmentTracker __instance, ThingWithComps eq, ref ThingWithComps resultingEq, ref bool __result)
+        {
+            if (eq != null && __instance.Contains(eq))
+                return true;
+            resultingEq = null;
+            __result = false;
+            return false;
+        }
+    }
+
     // Vanilla: JobGiver_AIDefendEscortee.GetDefendee casts duty.focus to Thing. A caravan animal
     // can transiently hold an escort-family duty whose focus is a bare cell (observed 2026-08-26:
     // Giddy-Up mount Doedicurus in a trade caravan, focus near the chill spot -- Giddy-Up's own
