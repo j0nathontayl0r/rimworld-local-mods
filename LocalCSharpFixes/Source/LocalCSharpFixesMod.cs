@@ -64,6 +64,7 @@ namespace LocalCSharpFixes
             CaptureExpansionFixes.Apply(h);
             MeleeAnimationFixes.Apply(h);
             IsekaiLevelingFixes.Apply(h);
+            VEFHeavyWeaponFixes.Apply(h);
 
             Log.Message("[LocalCSharpFixes] Harmony patches applied.");
         }
