@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using RimWorld;
@@ -295,6 +296,48 @@ namespace LocalCSharpFixes
                 return true;
             __instance?.EndJobWith(JobCondition.Incompletable);
             return false; // skip the original; it could only NRE
+        }
+    }
+
+    // Vanilla: QuestManager.QuestManagerTick parks a null in activeQuests[j] when a quest goes
+    // historical mid-loop and only compacts the list after the whole loop, so for the rest of that
+    // tick ActiveQuestsListForReading has holes. Vanilla's own IsReservedByAnyQuest null-checks for
+    // exactly this; QuestUtility.GetWorkDisabledQuestPart doesn't, and NREs on quests[i].State.
+    // Stock RimWorld rarely reaches it, but Combat Readiness Check prefixes
+    // StorytellerUtility.DefaultThreatPointsNow and walks every colonist through WorkTagIsDisabled ->
+    // CombinedDisabledWorkTags -> here, so any quest part computing threat points during the same
+    // tick a quest ends hits the hole (observed 2026-08-29 from QuestPart_SubquestGenerator_Gravcores;
+    // Quest.QuestTick catches per part, so the subquest generation is just skipped for that tick).
+    // Same null-safe walk, skipping the holes, plus a guard on a null pawns list. Also covers the
+    // three other vanilla callers (CharacterCardUtility and two in Pawn), which would hit it from
+    // the UI. The static buffer mirrors vanilla's own tmpQuestWorkDisabled, including its
+    // single-buffer re-entrancy behaviour.
+    // Signatures verified against the installed 1.6 DLL:
+    //   static List<QuestPart_WorkDisabled> RimWorld.QuestUtility.GetWorkDisabledQuestPart(Pawn p)
+    //   List<Pawn> RimWorld.QuestPart_WorkDisabled.pawns   /   QuestState RimWorld.Quest.State
+    [HarmonyPatch(typeof(QuestUtility), nameof(QuestUtility.GetWorkDisabledQuestPart))]
+    internal static class QuestUtility_GetWorkDisabledQuestPart_NullQuestGuard
+    {
+        private static readonly List<QuestPart_WorkDisabled> buffer = new List<QuestPart_WorkDisabled>();
+
+        private static bool Prefix(Pawn p, ref List<QuestPart_WorkDisabled> __result)
+        {
+            var quests = Find.QuestManager?.ActiveQuestsListForReading;
+            if (quests == null)
+                return true; // no quest manager yet; let the original deal with it
+            buffer.Clear();
+            for (var i = 0; i < quests.Count; i++)
+            {
+                var quest = quests[i];
+                if (quest == null || quest.State != QuestState.Ongoing)
+                    continue;
+                var parts = quest.PartsListForReading;
+                for (var j = 0; j < parts.Count; j++)
+                    if (parts[j] is QuestPart_WorkDisabled disabled && disabled.pawns != null && disabled.pawns.Contains(p))
+                        buffer.Add(disabled);
+            }
+            __result = buffer;
+            return false;
         }
     }
 }
