@@ -220,4 +220,36 @@ namespace LocalCSharpFixes
             return __exception is NullReferenceException ? null : __exception;
         }
     }
+
+    // Vanilla: Bill.GetUniqueLoadID() is "Bill_" + recipe.defName + "_" + loadID, so a bill whose
+    // recipe reference failed to resolve NREs the moment CrossRefHandler registers it ("Exception
+    // registering RimWorld.Bill_ProductionWithUft ... in loaded object directory"). Null recipes are
+    // routine after a content mod is dropped: both BillStack.ExposeData and Dubs Mint Menus'
+    // FBenchTemplate.ExposeData prune them -- but only in PostLoadInit, after cross-ref resolution
+    // has already thrown (observed 2026-08-29: a saved Mint Menus bench template still referencing
+    // Make_Seti_SpiderChair from a deactivated "Bicycles and more!"). Hand those bills a stable
+    // placeholder ID so registration succeeds and the existing pruning happens quietly. loadID is
+    // private, hence the FieldRef; if it ever disappears we fall back to the object hash, which is
+    // still unique per bill for the directory's purposes.
+    // Signature verified against the installed 1.6 DLL:
+    //   public string RimWorld.Bill.GetUniqueLoadID()   (non-virtual, subclasses don't override)
+    [HarmonyPatch(typeof(Bill), nameof(Bill.GetUniqueLoadID))]
+    internal static class Bill_GetUniqueLoadID_NullRecipeGuard
+    {
+        private static readonly AccessTools.FieldRef<Bill, int> loadIDRef = MakeLoadIDRef();
+
+        private static AccessTools.FieldRef<Bill, int> MakeLoadIDRef()
+        {
+            try { return AccessTools.FieldRefAccess<Bill, int>("loadID"); }
+            catch { return null; }
+        }
+
+        private static bool Prefix(Bill __instance, ref string __result)
+        {
+            if (__instance == null || __instance.recipe != null)
+                return true;
+            __result = "Bill_NullRecipe_" + (loadIDRef != null ? loadIDRef(__instance) : __instance.GetHashCode());
+            return false; // skip the original; it could only NRE
+        }
+    }
 }
