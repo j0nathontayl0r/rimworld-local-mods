@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using HarmonyLib;
 using RimWorld;
 using UnityEngine;
@@ -249,6 +250,50 @@ namespace LocalCSharpFixes
             if (__instance == null || __instance.recipe != null)
                 return true;
             __result = "Bill_NullRecipe_" + (loadIDRef != null ? loadIDRef(__instance) : __instance.GetHashCode());
+            return false; // skip the original; it could only NRE
+        }
+    }
+
+    // Vanilla (Biotech): JobDriver_BreastfeedCarryToMom's last toil hands the carried baby over with
+    //     pawn.carryTracker.innerContainer.TryTransferToContainer(pawn.carryTracker.CarriedThing, Mom.carryTracker.innerContainer)
+    // and ThingOwner.TryTransferToContainer reads item.stackCount immediately, so a hauler who lost
+    // the baby somewhere along the walk NREs instead of failing the job. The driver's own guards
+    // (FailOnDestroyedNullOrForbidden on both pawns, CanMomBreastfeedBaby) never recheck the carry
+    // tracker after the goto toil. Trigger here (2026-08-29, twice): a birth handled twice over --
+    // the log shows the same newborn processed twice and vanilla's "Tried to add the same relation
+    // twice: Parent, pawn=Katina, otherPawn=Sandra" one line earlier -- so the second pass took the
+    // baby out of the hauler's arms. End the job the way the toil's own transfer-failed branch
+    // would, instead of throwing into TryStartErrorRecoverJob.
+    // The toil body is a compiler-generated lambda; it's found by name rather than by its b__10_0
+    // ordinal so a RimWorld update renumbering it downgrades to a skip, not a silent miss.
+    // Signatures verified against the installed 1.6 DLL:
+    //   void JobDriver_BreastfeedCarryToMom.<StartBreastfeedJobOnMom>b__10_0()   (instance, no args;
+    //       inherited by JobDriver_BreastfeedCarryToDownedMom, which is covered by the same patch)
+    //   public void Verse.AI.JobDriver.EndJobWith(JobCondition)   /   public Pawn JobDriver.pawn
+    internal static class BreastfeedCarryToMomFixes
+    {
+        public static void Apply(Harmony h)
+        {
+            MethodInfo toilBody = null;
+            foreach (var m in AccessTools.GetDeclaredMethods(typeof(global::JobDriver_BreastfeedCarryToMom)))
+                if (m.Name.StartsWith("<StartBreastfeedJobOnMom>") && m.GetParameters().Length == 0)
+                {
+                    toilBody = m;
+                    break;
+                }
+            if (toilBody == null)
+            {
+                Log.Warning("[LocalCSharpFixes] skip breastfeed carry fix (StartBreastfeedJobOnMom toil body not found; RimWorld changed?)");
+                return;
+            }
+            h.Patch(toilBody, prefix: new HarmonyMethod(typeof(BreastfeedCarryToMomFixes), nameof(EndJobWhenBabyNoLongerCarried)));
+        }
+
+        public static bool EndJobWhenBabyNoLongerCarried(JobDriver __instance)
+        {
+            if (__instance?.pawn?.carryTracker?.CarriedThing != null)
+                return true;
+            __instance?.EndJobWith(JobCondition.Incompletable);
             return false; // skip the original; it could only NRE
         }
     }
