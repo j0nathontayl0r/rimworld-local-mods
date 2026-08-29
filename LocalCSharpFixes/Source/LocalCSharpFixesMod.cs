@@ -67,6 +67,7 @@ namespace LocalCSharpFixes
             MeleeAnimationFixes.Apply(h);
             IsekaiLevelingFixes.Apply(h);
             VEFHeavyWeaponFixes.Apply(h);
+            ReGrowthWorldGenFixes.Apply(h);
 
             Log.Message("[LocalCSharpFixes] Harmony patches applied.");
         }
