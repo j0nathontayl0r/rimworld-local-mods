@@ -49,6 +49,7 @@
     <li>JellyCreative.IsekaiLeveling</li>
     <li>Phonicmas.RimDark.FrameworkCore</li>
     <li>Mlie.ReGrowthExpandedWorldGeneration</li>
+    <li>OskarPotocki.VFE.Empire</li>
   </loadAfter>
   <description>Local Harmony patch mod that suppresses NREs / log spam and fixes small runtime bugs from workshop mods where an XML patch can't reach.
 
