@@ -30,6 +30,7 @@ namespace LocalCSharpFixes
     //   void         ColonyManagerRedux.Building_AIManager.Tick()   (protected override)
     //   void         CombatExtended.CompMechAmmo.TryMakeAmmoJob(bool forced = false)
     //   static IEnumerable<PawnKindDef> ColonyManagerRedux.Managers.Utilities_Hunting.GetMapPawnKindDefs(Map? map, bool animalsOnly = true)
+    //   Job          CombatExtended.AI.CompTend.TryGiveTacticalJob()   (override; TendSelf job targeting SelPawn)
     internal static class ThirdPartyPatches
     {
         // VSIE: GetChairFor calls ClosestThingReachable(food.Position, ...) without checking food.Spawned.
@@ -84,6 +85,24 @@ namespace LocalCSharpFixes
             }
             catch { }
             return true;
+        }
+
+        // Combat Extended: CompTend.TryGiveTacticalJob hands a non-player pawn a TendSelf job aimed at
+        // itself without checking reservations, and CompTacticalManager.TryGiveTacticalJobs starts it
+        // with preToilReservationsCanFail: false, so vanilla computes errorOnFailed = true. When one of
+        // our doctors has already reserved that pawn (DoctorTendEmergency on a downed enemy or a
+        // prisoner), JobDriver_TendPatient's reservation fails and every attempt costs two log lines --
+        // the red "Could not reserve" plus vanilla's "TryMakePreToilReservations() returned false for a
+        // non-queued job" -- repeating on CE's 600-tick cooldown for as long as the tend lasts.
+        // Drop the job when the pawn can't reserve itself; the doctor's tend is the better outcome
+        // anyway. CE sets lastTendJobAt before returning, so its own cooldown still throttles retries.
+        public static void CE_TendSelfJob_Postfix(ref Job __result)
+        {
+            if (__result?.def == null || __result.def.defName != "TendSelf") return;
+            var patient = __result.targetA.Thing as Pawn;
+            if (patient == null || !patient.Spawned || patient.Map == null) return;
+            if (!patient.CanReserve(patient))
+                __result = null;
         }
 
         // Defaults (1trickPwnyta): WorkPriorities.Patch_Pawn.Postfix (their postfix on

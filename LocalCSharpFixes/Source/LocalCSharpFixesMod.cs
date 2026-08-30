@@ -55,6 +55,8 @@ namespace LocalCSharpFixes
                       nameof(ThirdPartyPatches.CE_MechAmmoJob_Prefix));
             TryPrefix(h, "ColonyManagerRedux.Managers.Utilities_Hunting", "GetMapPawnKindDefs",
                       nameof(ThirdPartyPatches.CMR_MapPawnKinds_Prefix));
+            TryPostfix(h, "CombatExtended.AI.CompTend", "TryGiveTacticalJob",
+                      nameof(ThirdPartyPatches.CE_TendSelfJob_Postfix));
 
             GrimWorld40kFixes.Apply(h);
             VACLogSpamFixes.Apply(h);
@@ -74,11 +76,16 @@ namespace LocalCSharpFixes
             Log.Message("[LocalCSharpFixes] Harmony patches applied.");
         }
 
+        private enum PatchKind { Prefix, Postfix, Finalizer }
+
         private static void TryPrefix(Harmony h, string type, string method, string patchMethod)
-            => TryPatch(h, type, method, patchMethod, isFinalizer: false);
+            => TryPatch(h, type, method, patchMethod, PatchKind.Prefix);
+
+        private static void TryPostfix(Harmony h, string type, string method, string patchMethod)
+            => TryPatch(h, type, method, patchMethod, PatchKind.Postfix);
 
         private static void TryFinalizer(Harmony h, string type, string method, string patchMethod)
-            => TryPatch(h, type, method, patchMethod, isFinalizer: true);
+            => TryPatch(h, type, method, patchMethod, PatchKind.Finalizer);
 
         // For overloaded targets, where AccessTools.Method(type, name) throws AmbiguousMatchException
         // (seen: XMTUtility.WitnessLarva). Patches every overload carrying a parameter named
@@ -113,7 +120,7 @@ namespace LocalCSharpFixes
             }
         }
 
-        private static void TryPatch(Harmony h, string typeName, string methodName, string patchMethod, bool isFinalizer)
+        private static void TryPatch(Harmony h, string typeName, string methodName, string patchMethod, PatchKind kind)
         {
             try
             {
@@ -122,7 +129,8 @@ namespace LocalCSharpFixes
                 var m = AccessTools.Method(t, methodName);
                 if (m == null) { Log.Warning($"[LocalCSharpFixes] skip {typeName}.{methodName} (method not found)"); return; }
                 var hm = new HarmonyMethod(typeof(ThirdPartyPatches), patchMethod);
-                if (isFinalizer) h.Patch(m, finalizer: hm);
+                if (kind == PatchKind.Finalizer) h.Patch(m, finalizer: hm);
+                else if (kind == PatchKind.Postfix) h.Patch(m, postfix: hm);
                 else h.Patch(m, prefix: hm);
             }
             catch (Exception e)
