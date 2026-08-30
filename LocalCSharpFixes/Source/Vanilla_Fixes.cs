@@ -340,4 +340,56 @@ namespace LocalCSharpFixes
             return false;
         }
     }
+
+    // Vanilla (Ideology): three ritual behaviour workers dereference an unfilled prisoner role in
+    // PostCleanup -- "Error in LordJob.PostCleanup(): NullReferenceException" (observed 2026-08-29
+    // on the conversion ritual). LordJob_Ritual.Notify_PawnLost calls assignments.RemoveParticipant
+    // for every loss condition (killed, incapped, left the map, faction change, pulled into another
+    // lord), so PawnWithRole returns null and `pawn.IsPrisonerOfColony` throws. Ludeon fixed exactly
+    // this in RitualBehaviorWorker_Execution -- `if (pawn != null && pawn.IsPrisonerOfColony)` --
+    // and left the other three workers unguarded. All four also pass the warden role straight into
+    // TryTakePrisonerToBed, which calls warden.CanReserveAndReach, so a moralist/leader who left
+    // mid-ritual is a second hole that even the fixed worker doesn't cover.
+    // Take over the method with the fixed Execution logic: nothing to do when the prisoner role is
+    // empty, escort only when there is still a warden, and apply the escape delay either way, so a
+    // missing warden costs the escort rather than the whole cleanup. Lord.Cleanup catches the throw
+    // today, so only that escort and delay are lost -- but they're lost on every affected ritual.
+    // Signatures verified against the installed 1.6 DLL:
+    //   void RimWorld.RitualBehaviorWorker_{Conversion,Trial,PrisonerSacrifice}.PostCleanup(LordJob_Ritual)
+    //   Pawn RimWorld.LordJob_Ritual.PawnWithRole(string)   (assignments.FirstAssignedPawn, nullable)
+    //   static void RimWorld.WorkGiver_Warden_TakeToBed.TryTakePrisonerToBed(Pawn prisoner, Pawn warden)
+    //   Role ids as passed by each worker: conversion moralist/convertee, trial leader/convict,
+    //   prisoner sacrifice moralist/prisoner
+    internal static class RitualPrisonerCleanup
+    {
+        public static bool TakePrisonerToBed(LordJob_Ritual ritual, string wardenRole, string prisonerRole)
+        {
+            var prisoner = ritual?.PawnWithRole(prisonerRole);
+            if (prisoner == null || !prisoner.IsPrisonerOfColony)
+                return false; // role vacated mid-ritual; the original would only NRE
+            var warden = ritual.PawnWithRole(wardenRole);
+            if (warden != null)
+                WorkGiver_Warden_TakeToBed.TryTakePrisonerToBed(prisoner, warden);
+            prisoner.guest?.WaitInsteadOfEscapingFor(1250);
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(RitualBehaviorWorker_Conversion), nameof(RitualBehaviorWorker_Conversion.PostCleanup))]
+    internal static class RitualConversion_PostCleanup_MissingRoleGuard
+    {
+        private static bool Prefix(LordJob_Ritual ritual) => RitualPrisonerCleanup.TakePrisonerToBed(ritual, "moralist", "convertee");
+    }
+
+    [HarmonyPatch(typeof(RitualBehaviorWorker_Trial), nameof(RitualBehaviorWorker_Trial.PostCleanup))]
+    internal static class RitualTrial_PostCleanup_MissingRoleGuard
+    {
+        private static bool Prefix(LordJob_Ritual ritual) => RitualPrisonerCleanup.TakePrisonerToBed(ritual, "leader", "convict");
+    }
+
+    [HarmonyPatch(typeof(RitualBehaviorWorker_PrisonerSacrifice), nameof(RitualBehaviorWorker_PrisonerSacrifice.PostCleanup))]
+    internal static class RitualPrisonerSacrifice_PostCleanup_MissingRoleGuard
+    {
+        private static bool Prefix(LordJob_Ritual ritual) => RitualPrisonerCleanup.TakePrisonerToBed(ritual, "moralist", "prisoner");
+    }
 }
