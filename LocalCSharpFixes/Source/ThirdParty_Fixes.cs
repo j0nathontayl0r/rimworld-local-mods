@@ -66,11 +66,16 @@ namespace LocalCSharpFixes
         // in that broken context.
         public static Exception RM_PreApplyDamage_Finalizer(Exception __exception) => null;
 
-        // Pick Up And Haul: JobDriver_HaulToInventory.TryMakePreToilReservations(bool) calls Reserve()
-        // with no CanReserve pre-check, spamming "Could not reserve" when a colonist already holds a
-        // HaulToContainer reservation on the same item. Pre-check CanReserve(B) and silently fail the job
-        // (same outcome, no log). Uses object + Traverse so we don't couple to PUAH's field layout;
-        // GetActor() is the public accessor for the driver's pawn.
+        // Pick Up And Haul: JobDriver_HaulToInventory.TryMakePreToilReservations(bool) hard-codes
+        // errorOnFailed: true in both its Reserve() calls, ignoring the parameter vanilla passes -- and
+        // vanilla passes false for a queued job, then ends it quietly with QueuedNoLongerValid. So every
+        // lost race logs a red "Could not reserve" that vanilla explicitly asked it not to log: either
+        // the destination cell (a colonist already holding a HaulToContainer reservation there) or, for
+        // a job that sat in the queue while another hauler claimed the stack, targetQueueA[0] -- the item
+        // PUAH reserves first (observed 2026-08-30: queued steel haul, already reserved by another pawn
+        // six toils into his own haul). Pre-check both with CanReserve and silently fail the job, which
+        // is the same outcome PUAH produces when its own Reserve returns false. Uses object + Traverse so
+        // we don't couple to PUAH's field layout; GetActor() is the public accessor for the driver's pawn.
         public static bool PUAH_TryMakePreToilReservations_Prefix(object __instance, ref bool __result)
         {
             try
@@ -81,6 +86,9 @@ namespace LocalCSharpFixes
                 {
                     var tgt = job.GetTarget(TargetIndex.B);
                     if (tgt.IsValid && !pawn.CanReserve(tgt)) { __result = false; return false; }
+                    var queue = job.targetQueueA;
+                    if (queue != null && queue.Count > 0 && queue[0].IsValid && !pawn.CanReserve(queue[0]))
+                    { __result = false; return false; }
                 }
             }
             catch { }
