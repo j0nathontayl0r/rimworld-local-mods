@@ -392,4 +392,30 @@ namespace LocalCSharpFixes
     {
         private static bool Prefix(LordJob_Ritual ritual) => RitualPrisonerCleanup.TakePrisonerToBed(ritual, "moralist", "prisoner");
     }
+
+    // The Dead Man's Switch: its analyzable items (artificial muscle, wetware computer, T/R component,
+    // ...) set completedLetter to "By studying the {PARENT_label}, {STUDIER_labelShort} has acquired
+    // the insight ...". PARENT/STUDIER are Anomaly's CompStudiable symbols; the comp here is Biotech's
+    // CompAnalyzableUnlockResearch, and CompAnalyzable.GetFormattedLetterString only supplies PAWN plus
+    // the comp's ExtraNamedArg (RESEARCH). So finishing an analysis logs a red "Could not resolve
+    // symbol" per unresolved symbol and shows the raw braces in the letter. Fixing the mod's XML isn't
+    // enough -- its English DefInjected carries the same text and is applied after patches -- so add
+    // STUDIER (the studier) and PARENT (the studied thing) as aliases here. Vanilla's own analyzable
+    // letters use PAWN and never contain these symbols, so nothing else changes behaviour.
+    [HarmonyPatch(typeof(CompAnalyzable), "GetFormattedLetterString")]
+    internal static class CompAnalyzable_GetFormattedLetterString_StudySymbols
+    {
+        private static bool Prefix(CompAnalyzable __instance, string text, Pawn pawn, ref string __result)
+        {
+            if (string.IsNullOrEmpty(text) || (!text.Contains("{PARENT") && !text.Contains("{STUDIER")))
+                return true;
+            var args = new List<NamedArgument>();
+            if (pawn != null) { args.Add(pawn.Named("PAWN")); args.Add(pawn.Named("STUDIER")); }
+            if (__instance?.parent != null) args.Add(__instance.parent.Named("PARENT"));
+            var extra = __instance?.ExtraNamedArg;
+            if (extra.HasValue) args.Add(extra.Value);
+            __result = text.Formatted(args).Resolve();
+            return false;
+        }
+    }
 }
