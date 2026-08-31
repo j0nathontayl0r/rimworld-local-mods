@@ -393,6 +393,26 @@ namespace LocalCSharpFixes
         private static bool Prefix(LordJob_Ritual ritual) => RitualPrisonerCleanup.TakePrisonerToBed(ritual, "moralist", "prisoner");
     }
 
+    // Vanilla: PawnGenerator.GeneratePawn dereferences its own result -- "if (pawn.guest != null)" --
+    // with no null check, even though generation deliberately gives up and returns null after "Too
+    // many tries". So a pawnkind that can't satisfy its own requirements turns a handled give-up into
+    // an NRE. PawnRelationWorker_Sibling is the only relation worker that generates a pawn: it asks
+    // for a parent using the CHILD's kindDef with a forced gender, and nothing weakens the kind's
+    // requirements for that parent. Observed 2026-08-31 with GrimWorld 40k's BEWH_LordCommanderPawn
+    // (Primarch, fixedGender Male, requiredWorkTags Violent, required Shooting/Melee skills): every
+    // one of the 120 tries for its FEMALE parent came back "incapable of required skill: Shooting",
+    // generation returned null, GeneratePawn NREd on it, and the exception unwound through
+    // GeneratePawnRelations all the way to PawnGroupKindWorker.GeneratePawns -- so the whole raid
+    // failed to spawn ("Exception while generating pawn group"), not just the relation.
+    // Swallow the NRE at the relation worker: the pawn loses a sibling (and its off-map parents),
+    // every other relation worker still runs, and the raid arrives. Anything but an NRE still throws.
+    [HarmonyPatch(typeof(PawnRelationWorker_Sibling), nameof(PawnRelationWorker_Sibling.CreateRelation))]
+    internal static class SiblingRelation_UngeneratableParent_Guard
+    {
+        private static Exception Finalizer(Exception __exception)
+            => __exception is NullReferenceException ? null : __exception;
+    }
+
     // Vanilla: Pawn_RelationsTracker.TryRemoveDirectRelation assumes a reflexive relation (spouse,
     // lover, sibling, ...) always has its mirror entry on the other pawn -- it Finds it and
     // dereferences the result unchecked. A one-sided reflexive relation therefore NREs on removal, and
