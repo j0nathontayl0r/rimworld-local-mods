@@ -72,6 +72,7 @@ namespace LocalCSharpFixes
             ReGrowthWorldGenFixes.Apply(h);
             VFEEmpireFixes.Apply(h);
             BreastfeedCarryToMomFixes.Apply(h);
+            RimefellerFixes.Apply(h);
 
             Log.Message("[LocalCSharpFixes] Harmony patches applied.");
         }

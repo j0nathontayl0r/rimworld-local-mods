@@ -51,6 +51,7 @@
     <li>Mlie.ReGrowthExpandedWorldGeneration</li>
     <li>OskarPotocki.VFE.Empire</li>
     <li>hlx.UltratechAlteredCarbon</li>
+    <li>Dubwise.Rimefeller</li>
   </loadAfter>
   <description>Local Harmony patch mod that suppresses NREs / log spam and fixes small runtime bugs from workshop mods where an XML patch can't reach.
 
