@@ -76,6 +76,13 @@ namespace LocalCSharpFixes
         // six toils into his own haul). Pre-check both with CanReserve and silently fail the job, which
         // is the same outcome PUAH produces when its own Reserve returns false. Uses object + Traverse so
         // we don't couple to PUAH's field layout; GetActor() is the public accessor for the driver's pawn.
+        // That targetQueueA[0] is also unguarded: PUAH indexes it with no count check, so a job whose
+        // pickup queue is empty by the time reservations run throws IndexOutOfRange mid-tick instead of
+        // failing (observed 2026-08-31: "Exception ticking Schulzi"). Pick Up And Haul - Shared Storage
+        // Access prunes unreservable entries out of that queue in its own prefix and bails with false
+        // when it empties it, but only while its shared reservations are on -- otherwise the empty queue
+        // reaches PUAH. Fail the job for an empty queue as well; vanilla then ends it (a one-off yellow
+        // "returned false for a non-queued job" warning at worst) rather than aborting the pawn's tick.
         public static bool PUAH_TryMakePreToilReservations_Prefix(object __instance, ref bool __result)
         {
             try
@@ -87,8 +94,8 @@ namespace LocalCSharpFixes
                     var tgt = job.GetTarget(TargetIndex.B);
                     if (tgt.IsValid && !pawn.CanReserve(tgt)) { __result = false; return false; }
                     var queue = job.targetQueueA;
-                    if (queue != null && queue.Count > 0 && queue[0].IsValid && !pawn.CanReserve(queue[0]))
-                    { __result = false; return false; }
+                    if (queue == null || queue.Count == 0) { __result = false; return false; }
+                    if (queue[0].IsValid && !pawn.CanReserve(queue[0])) { __result = false; return false; }
                 }
             }
             catch { }
