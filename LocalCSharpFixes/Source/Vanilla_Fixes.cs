@@ -393,6 +393,36 @@ namespace LocalCSharpFixes
         private static bool Prefix(LordJob_Ritual ritual) => RitualPrisonerCleanup.TakePrisonerToBed(ritual, "moralist", "prisoner");
     }
 
+    // Vanilla: a pawn already lying in a bed whose reservation slots are all claimed can't start its
+    // LayDown job -- red "Could not reserve <bed> ... for maxPawns 4", then the yellow
+    // "TryMakePreToilReservations() returned false for a non-queued job", and the pawn is left in the
+    // bed with an errored job that the think tree re-issues (observed 2026-08-31: four caged prisoners
+    // in one Capture Expansion CE_CageLarge, 4 sleeping slots, FIVE reservations on it). Beds can be
+    // over-subscribed because ReservationManager.Reserve lets a playerForced job (here: ordered
+    // captures into a full cage) reserve past maxPawns and interrupt the existing reservers -- whose
+    // LayDown jobs then restart and find no slot left, even though they are physically in the bed.
+    // When the pawn already occupies the bed the reservation is bookkeeping, not a claim on a free
+    // slot: take one quietly if there is one, and lie down either way. Pawns not yet in the bed still
+    // go through vanilla, so a genuine race for a free slot is still resolved by reservation.
+    [HarmonyPatch(typeof(JobDriver_LayDown), nameof(JobDriver_LayDown.TryMakePreToilReservations))]
+    internal static class JobDriverLayDown_AlreadyInBed_ReservationGuard
+    {
+        private static bool Prefix(JobDriver_LayDown __instance, ref bool __result)
+        {
+            var pawn = __instance.pawn;
+            var bed = __instance.Bed;
+            if (pawn == null || bed == null || !bed.Spawned || bed.Map != pawn.Map)
+                return true;
+            if (!bed.OccupiedRect().Contains(pawn.Position))
+                return true; // not in the bed yet -- vanilla's reservation race still applies
+            if (pawn.CanReserve(bed, bed.SleepingSlotsCount, 0))
+                return true;
+            pawn.Reserve(bed, __instance.job, bed.SleepingSlotsCount, 0, null, errorOnFailed: false);
+            __result = true;
+            return false;
+        }
+    }
+
     // The Dead Man's Switch: its analyzable items (artificial muscle, wetware computer, T/R component,
     // ...) set completedLetter to "By studying the {PARENT_label}, {STUDIER_labelShort} has acquired
     // the insight ...". PARENT/STUDIER are Anomaly's CompStudiable symbols; the comp here is Biotech's
