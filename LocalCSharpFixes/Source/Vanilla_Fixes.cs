@@ -393,6 +393,49 @@ namespace LocalCSharpFixes
         private static bool Prefix(LordJob_Ritual ritual) => RitualPrisonerCleanup.TakePrisonerToBed(ritual, "moralist", "prisoner");
     }
 
+    // Vanilla: Pawn_RelationsTracker.TryRemoveDirectRelation assumes a reflexive relation (spouse,
+    // lover, sibling, ...) always has its mirror entry on the other pawn -- it Finds it and
+    // dereferences the result unchecked. A one-sided reflexive relation therefore NREs on removal, and
+    // because ClearAllRelations runs inside Pawn.Discard, the World Pawn GC dies mid-pass: "Error in
+    // WorldPawnGCTick()" (observed 2026-08-31). The pawn is never discarded, so every later GC pass
+    // hits the same relation again and no world pawns get collected at all.
+    // Repair instead of suppress: put the missing mirror back so vanilla removes both sides and both
+    // trackers stay consistent. If the other pawn (or its tracker) is gone entirely there is no mirror
+    // to restore and vanilla could never remove the entry, so drop it here and report success.
+    [HarmonyPatch(typeof(Pawn_RelationsTracker), nameof(Pawn_RelationsTracker.TryRemoveDirectRelation))]
+    internal static class PawnRelations_TryRemoveDirectRelation_OneSidedGuard
+    {
+        private static readonly FieldInfo DirectRelationsField = AccessTools.Field(typeof(Pawn_RelationsTracker), "directRelations");
+        private static readonly FieldInfo TrackerPawnField = AccessTools.Field(typeof(Pawn_RelationsTracker), "pawn");
+
+        private static List<DirectPawnRelation> RelationsOf(Pawn_RelationsTracker tracker)
+            => tracker == null ? null : DirectRelationsField?.GetValue(tracker) as List<DirectPawnRelation>;
+
+        private static bool Prefix(Pawn_RelationsTracker __instance, PawnRelationDef def, Pawn otherPawn, ref bool __result)
+        {
+            if (def == null || def.implied || !def.reflexive)
+                return true;
+            var mine = RelationsOf(__instance);
+            var pawn = TrackerPawnField?.GetValue(__instance) as Pawn;
+            if (mine == null || pawn == null)
+                return true;
+            var theirs = RelationsOf(otherPawn?.relations);
+            if (theirs != null && theirs.Find(r => r.def == def && r.otherPawn == pawn) != null)
+                return true; // mirror is there; vanilla is safe
+            var index = mine.FindIndex(r => r.def == def && r.otherPawn == otherPawn);
+            if (index < 0)
+                return true; // relation isn't on this side either -- vanilla's "not here" path
+            if (theirs != null)
+            {
+                theirs.Add(new DirectPawnRelation(def, pawn, 0));
+                return true; // vanilla now removes both sides and does its own bookkeeping
+            }
+            mine.RemoveAt(index);
+            __result = true;
+            return false;
+        }
+    }
+
     // Vanilla: a pawn already lying in a bed whose reservation slots are all claimed can't start its
     // LayDown job -- red "Could not reserve <bed> ... for maxPawns 4", then the yellow
     // "TryMakePreToilReservations() returned false for a non-queued job", and the pawn is left in the
