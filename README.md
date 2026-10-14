@@ -27,6 +27,16 @@ constructors run. Uses a `Mod` subclass rather than `[StaticConstructorOnStartup
 constructor runs during `CreateModClasses` — which is why this one must sit at the **top** of the
 load order, immediately after the official DLCs. Load order position is load-bearing.
 
+### `LocalVisualExceptions` — packageId `brrainz.visualexceptions` (RimWorld 1.7 only)
+Local 1.7 build of [Visual Exceptions](https://github.com/pardeike/VisualExceptions) (MIT, vendored
+from upstream commit `aa1fc51`). The workshop build's `ExceptionInfo` type initialiser binds two
+methods by reflection that no longer exist on 1.7 — Mono's private `Exception.ToString(bool, bool)`
+and the Harmony mod's `ExceptionTools.ExtractHarmonyEnhancedStackTrace` (renamed in its 1.7 build) —
+so it threw `TypeInitializationException` on every handled exception, and crashed the game when
+that happened on the loading thread. Changes from upstream are marked `LOCAL 1.7 PORT`. It shares the
+workshop mod's packageId, so activate exactly one of them: this one on 1.7, workshop `2538411704` on
+1.6. Retire it once the workshop mod ships a 1.7 build.
+
 ## Building
 
 Both C# mods build with the .NET SDK on either Windows or Linux:
@@ -37,6 +47,16 @@ dotnet build LocalEarlyFixes/Source/LocalEarlyFixes.csproj
 They target `net472` without the targeting pack, via `FrameworkPathOverride` pointed at RimWorld's
 bundled `Managed/` folder, and emit straight into each mod's `Assemblies/`. The `SteamRoot` /
 `RimDataDir` properties are selected per-OS — update them in the `.csproj` if either install moves.
+
+**RimWorld 1.7** (Waylith engine, .NET 10) needs a separate build. `LocalCSharpFixes` has one at
+`Source/v1.7/LocalCSharpFixes.csproj`, which compiles the same sources for `net10.0` against the
+game's install-root DLLs (`Assembly-CSharp.dll`, `UnityStubs.dll` in place of UnityEngine) and
+Harmony's `1.7/Assemblies`, and writes `1.7/Assemblies/`. `LoadFolders.xml` makes 1.6 load the root
+`Assemblies/` and 1.7 load only `1.7/` — listing both under `<v1.7>` would apply every patch twice.
+```
+dotnet build LocalCSharpFixes/Source/v1.7/LocalCSharpFixes.csproj
+```
+`LocalVisualExceptions` is 1.7-only and builds the same way from its own `Source/`.
 
 Two non-obvious details are documented inline in the `.csproj` files: `netstandard.dll` must be
 referenced explicitly (Unity type-forwards through it), and a `NoCopyLocal` target clears
@@ -88,6 +108,12 @@ git config pull.ff only
 **The DLLs in `Assemblies/` are committed deliberately** so a fresh checkout runs without a build
 step. The tradeoff: always rebuild before committing C#, and always fetch before starting work, or
 one machine will silently run stale code.
+
+**Each machine owns the DLL for the game version it runs.** A build compiles against the installed
+game's `Assembly-CSharp.dll`, so the 1.6 DLLs in `Assemblies/` can only be built on a 1.6 install and
+the 1.7 DLLs in `1.7/Assemblies/` only on a 1.7 install. After a C# change, rebuild and commit the DLL
+for your own version, and expect the other version's DLL to stay stale until that machine rebuilds it
+— it still loads, it just lacks the change.
 
 ## `recovered-spec/`
 The original design/triage notes (recovered from a backup) documenting what each patch fixes and why.

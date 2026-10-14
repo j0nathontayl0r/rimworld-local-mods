@@ -31,9 +31,40 @@ namespace LocalCSharpFixes
     //   Pawn RealRuins.PawnRestoreUtility.MakePawnWithRawXml(string xml)   (internal, returns null on failure)
     //   RealRuins.BakedLogEntry..ctor(string logString, Pawn pawn, long dateShift)
     //   Verse.LogEntry.logID   (protected int; ctor guard: if (Scribe.mode == LoadSaveMode.Inactive) logID = GetNextLogID())
+    // 1.7 follow-up, observed 2026-10-15: on a brand-new game AssignFreshLogId itself drew
+    // "Getting next unique ID during LoadingVars before UniqueIDsManager was loaded. Assigning a
+    // random value." (11x per map). UniqueIDsManager.GetNextID warns and returns Rand.Int whenever
+    // a scribe load runs before the manager was loaded from a save -- which on a new game is
+    // always, since it never is. While a map is being generated in such a game the in-memory
+    // counter IS authoritative, so take the next logID straight from nextLogID; everywhere else
+    // keep going through GetNextLogID so a real save load still gets vanilla's behaviour.
+    // Members verified against the installed 1.7 Assembly-CSharp:
+    //   private int RimWorld.UniqueIDsManager.nextLogID / private bool wasLoaded
+    //   public static Map Verse.MapGenerator.mapBeingGenerated
     public static class RealRuinsFixes
     {
         private static AccessTools.FieldRef<LogEntry, int> logIdField;
+        private static readonly AccessTools.FieldRef<RimWorld.UniqueIDsManager, int> nextLogIdField = TryFieldRef<int>("nextLogID");
+        private static readonly AccessTools.FieldRef<RimWorld.UniqueIDsManager, bool> wasLoadedField = TryFieldRef<bool>("wasLoaded");
+
+        private static AccessTools.FieldRef<RimWorld.UniqueIDsManager, T> TryFieldRef<T>(string name)
+        {
+            try { return AccessTools.FieldRefAccess<RimWorld.UniqueIDsManager, T>(name); }
+            catch { return null; }
+        }
+
+        private static int NextLogId()
+        {
+            var ids = Find.UniqueIDsManager;
+            if (Scribe.mode == LoadSaveMode.LoadingVars && MapGenerator.mapBeingGenerated != null
+                && nextLogIdField != null && wasLoadedField != null && !wasLoadedField(ids))
+            {
+                int id = nextLogIdField(ids);
+                nextLogIdField(ids) = id == int.MaxValue - 1 ? 0 : id + 1;
+                return id;
+            }
+            return ids.GetNextLogID();
+        }
 
         public static void Apply(Harmony h)
         {
@@ -72,7 +103,7 @@ namespace LocalCSharpFixes
             try
             {
                 if (Scribe.mode != LoadSaveMode.Inactive)
-                    logIdField(__instance) = Find.UniqueIDsManager.GetNextLogID();
+                    logIdField(__instance) = NextLogId();
             }
             catch (Exception e)
             {
@@ -85,7 +116,7 @@ namespace LocalCSharpFixes
             try
             {
                 if (Scribe.mode == LoadSaveMode.PostLoadInit && logIdField(__instance) == 0)
-                    logIdField(__instance) = Find.UniqueIDsManager.GetNextLogID();
+                    logIdField(__instance) = NextLogId();
             }
             catch (Exception e)
             {

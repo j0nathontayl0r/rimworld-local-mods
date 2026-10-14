@@ -6,3 +6,9 @@
 # OS / editor cruft
 .DS_Store
 *.swp
+
+# RimWorld 1.7 writes a converted .dds next to every .png it loads, inside the mod folders (they're
+# junctioned in, so it lands here). Generated cache, like obj/ -- never commit it.
+# Exception: LocalPatches ships hand-made .dds replacement textures. Those are already tracked, so
+# this rule doesn't touch them; a NEW intentional .dds must be added with `git add -f`.
+*.dds

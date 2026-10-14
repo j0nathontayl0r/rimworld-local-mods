@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- RimWorld 1.7 build of the same sources as ../LocalCSharpFixes.csproj (which stays the 1.6
+       build for the Linux box). 1.7 runs on its own .NET 10 build (WaylithClr), so this targets
+       net10.0 and compiles against the DLLs in the game's install root; UnityEngine types now live
+       in UnityStubs.dll. Output goes to ../../1.7/Assemblies, picked by LoadFolders.xml. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>LocalCSharpFixes</AssemblyName>
+    <RootNamespace>LocalCSharpFixes</RootNamespace>
+    <Configuration>Release</Configuration>
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <OutputPath>$(MSBuildProjectDirectory)/../../1.7/Assemblies</OutputPath>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <Deterministic>true</Deterministic>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+
+    <SteamRoot Condition="'$(OS)' == 'Windows_NT'">C:/Program Files (x86)/Steam/steamapps</SteamRoot>
+    <SteamRoot Condition="'$(OS)' != 'Windows_NT'">/mnt/games/SteamLibrary/steamapps</SteamRoot>
+    <RimRoot>$(SteamRoot)/common/RimWorld</RimRoot>
+    <HarmonyDll>$(SteamRoot)/workshop/content/294100/2009463077/1.7/Assemblies/0Harmony.dll</HarmonyDll>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp"> <HintPath>$(RimRoot)/Assembly-CSharp.dll</HintPath> <Private>false</Private></Reference>
+    <Reference Include="UnityStubs">      <HintPath>$(RimRoot)/UnityStubs.dll</HintPath>      <Private>false</Private></Reference>
+    <Reference Include="0Harmony">        <HintPath>$(HarmonyDll)</HintPath>                  <Private>false</Private></Reference>
+  </ItemGroup>
+
+</Project>

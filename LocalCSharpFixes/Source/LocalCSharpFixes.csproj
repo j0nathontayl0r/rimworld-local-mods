@@ -34,6 +34,12 @@
     <FrameworkPathOverride>$(RimManaged)</FrameworkPathOverride>
   </PropertyGroup>
 
+  <!-- v1.7/ holds the RimWorld 1.7 (.NET 10) build of these same sources; keep its project and
+       generated obj/ files out of this 1.6 build. -->
+  <ItemGroup>
+    <Compile Remove="v1.7/**" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- Base class library from RimWorld's Managed folder. netstandard.dll is required even though
          nothing references it directly: Unity's assemblies type-forward through it, so without it
