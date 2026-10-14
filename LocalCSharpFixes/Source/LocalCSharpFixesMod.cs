@@ -74,6 +74,7 @@ namespace LocalCSharpFixes
             BreastfeedCarryToMomFixes.Apply(h);
             RimefellerFixes.Apply(h);
             ExoMechFixes.Apply(h);
+            Vanilla17Fixes.Apply(h);
 
             Log.Message("[LocalCSharpFixes] Harmony patches applied.");
         }
