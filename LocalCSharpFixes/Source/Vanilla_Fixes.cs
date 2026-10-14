@@ -511,4 +511,38 @@ namespace LocalCSharpFixes
             return false;
         }
     }
+
+    // Vanilla (1.6): DynamicDrawManager.DrawSilhouettes reads
+    // pawn.Drawer.renderer.SilhouetteGraphic.drawSize unguarded, but that graphic is a plain field
+    // assigned only by the LAST statement of PawnRenderer.RenderPawnAt. Every path that leaves
+    // RenderPawnAt earlier leaves it null for a pawn that has never completed a render: the
+    // `if (!results.draw) return;` guard, an exception inside RenderPawnInternal (swallowed by
+    // DynamicDrawManager's own per-thing catch, so DrawSilhouettes still runs afterwards), or a
+    // mod prefix that replaces pawn rendering wholesale and skips the original. ShouldDrawSilhouette
+    // only consults prefs/fog/hostility, so it happily green-lights such a pawn.
+    // Cost is not one pawn: the NRE escapes the whole silhouette loop, so NO pawn gets a silhouette
+    // that frame, and it repeats every frame while zoomed out (observed 2026-09-01, duplicate
+    // stacktrace ref 91EBA27C). Decline the silhouette for a pawn whose graphic isn't there yet --
+    // vanilla could only throw on it -- and every other pawn on screen keeps drawing. Also covers
+    // the non-job path (SilhouetteUtility.DrawSilhouette / GetCachedSilhouetteData deref the same
+    // graphic). Non-pawn things are left alone: DrawSilhouettes only ever sets drawSilhouette for
+    // pawns, and Thing.Graphic is a virtual mods override, not worth calling per-thing per-frame.
+    // Signatures verified against the installed 1.6 DLL:
+    //   static bool Verse.SilhouetteUtility.ShouldDrawSilhouette(Thing thing)
+    //   Graphic Verse.PawnRenderer.SilhouetteGraphic => silhouetteGraphic   (plain field)
+    //   Pawn_DrawTracker Verse.Pawn.Drawer => drawer ?? (drawer = new ...)  (never null)
+    //   public PawnRenderer Verse.Pawn_DrawTracker.renderer                 (set in ctor)
+    [HarmonyPatch(typeof(SilhouetteUtility), nameof(SilhouetteUtility.ShouldDrawSilhouette))]
+    internal static class SilhouetteUtility_ShouldDrawSilhouette_MissingGraphicGuard
+    {
+        private static void Postfix(Thing thing, ref bool __result)
+        {
+            if (!__result || !(thing is Pawn pawn) || pawn.Drawer.renderer.SilhouetteGraphic != null)
+                return;
+            __result = false;
+            // Once per race, not per frame -- names the culprit without becoming the spam it replaces.
+            Log.WarningOnce($"[LocalCSharpFixes] {pawn.def.defName} reached the silhouette pass with no silhouette graphic (RenderPawnAt never completed); skipping its silhouette.",
+                            Gen.HashCombineInt(pawn.def.GetHashCode(), 0x51150E));
+        }
+    }
 }
