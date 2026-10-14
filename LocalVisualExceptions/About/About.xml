@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Visual Exceptions (local 1.7 port)</name>
+  <author>Andreas Pardeike; local 1.7 port</author>
+  <!-- Same packageId as the workshop mod (2538411704) on purpose: RimWorld allows a local and a
+       workshop mod to share one as long as only one is active, so dependents and load-order rules
+       keep matching. Activate this one on 1.7, the workshop one on 1.6. -->
+  <packageId>brrainz.visualexceptions</packageId>
+  <supportedVersions>
+    <li>1.7</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>brrainz.harmony</packageId>
+      <displayName>Harmony</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+      <downloadUrl>https://github.com/pardeike/HarmonyRimWorld/releases/latest</downloadUrl>
+    </li>
+  </modDependencies>
+  <loadBefore>
+    <li>Ludeon.RimWorld</li>
+  </loadBefore>
+  <loadAfter>
+    <li>brrainz.harmony</li>
+  </loadAfter>
+  <modVersion>1.4.0.0</modVersion>
+  <url>https://github.com/pardeike/VisualExceptions</url>
+  <description>Local RimWorld 1.7 build of Visual Exceptions 1.4 (MIT, Andreas Pardeike), from upstream commit aa1fc51.
+
+Upstream's ExceptionInfo bound Exception.ToString(bool, bool) (Mono-only) and HarmonyMod.ExceptionTools.ExtractHarmonyEnhancedStackTrace (renamed in the Harmony mod's 1.7 build) by reflection; both are gone on 1.7, so its type initialiser threw and crashed the game. This build replaces them with plain calls and drops CrossPromotion. Retire it once the workshop mod ships a 1.7 build.</description>
+</ModMetaData>

@@ -1,0 +1,52 @@
+using HarmonyLib;
+using System.Linq;
+using UnityEngine;
+using Verse;
+
+namespace VisualExceptions
+{
+	[StaticConstructorOnStartup]
+	class HarmonyMain(ModContentPack content) : Mod(content)
+	{
+		static HarmonyMain() // loads earliest
+		{
+			ExceptionState.Load();
+			if (ExceptionState.configuration.Debugging)
+				Patcher.Apply();
+
+			// LOCAL 1.7 PORT: CrossPromotion.Install(76561197973010050) dropped - a promo panel for the
+			// author's other mods, shipped as a separate net472 library with no 1.7 build.
+		}
+
+		public override void DoSettingsWindowContents(Rect inRect)
+		{
+			var list = new Listing_Standard { ColumnWidth = inRect.width / 2f };
+			list.Begin(inRect);
+			list.Gap(12f);
+
+			var conf = ExceptionState.configuration;
+			var props = AccessTools.GetDeclaredProperties(typeof(Configuration));
+			var values = props.Select(prop => (prop, prop.TryGetAttribute<SettingsAttribute>(), (bool)prop.GetValue(conf))).ToArray();
+			var needsSave = false;
+			foreach (var value in values)
+			{
+				var temp = value.Item3;
+				list.CheckboxLabeled(value.Item2.label, ref temp);
+				if (temp != value.Item3)
+				{
+					needsSave = true;
+					value.prop.SetValue(conf, temp);
+				}
+			}
+			if (needsSave)
+				ExceptionState.Save();
+
+			list.End();
+		}
+
+		public override string SettingsCategory()
+		{
+			return "Visual Exceptions";
+		}
+	}
+}

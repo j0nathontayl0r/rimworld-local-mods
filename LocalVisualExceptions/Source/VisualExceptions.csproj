@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- RimWorld 1.7 runs on its own .NET 10 build (WaylithClr), so mods target net10.0 and compile
+         against the game's DLLs in the install root - there is no Managed/ folder any more. -->
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>VisualExceptions</AssemblyName>
+    <RootNamespace>VisualExceptions</RootNamespace>
+    <Configuration>Release</Configuration>
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Version>1.4.0.0</Version>
+
+    <!-- Output straight into the 1.7 load folder (RimWorld loads DLLs from there) -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <OutputPath>$(MSBuildProjectDirectory)/../1.7/Assemblies</OutputPath>
+
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <Deterministic>true</Deterministic>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+
+    <SteamRoot Condition="'$(OS)' == 'Windows_NT'">C:/Program Files (x86)/Steam/steamapps</SteamRoot>
+    <SteamRoot Condition="'$(OS)' != 'Windows_NT'">/mnt/games/SteamLibrary/steamapps</SteamRoot>
+    <RimRoot>$(SteamRoot)/common/RimWorld</RimRoot>
+    <HarmonyDll>$(SteamRoot)/workshop/content/294100/2009463077/1.7/Assemblies/0Harmony.dll</HarmonyDll>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- UnityEngine.* types (Rect, GUI, Texture2D, ...) now live in UnityStubs.dll; the runtime
+         redirects any UnityEngine* reference there, so compile straight against it. -->
+    <Reference Include="Assembly-CSharp"> <HintPath>$(RimRoot)/Assembly-CSharp.dll</HintPath> <Private>false</Private></Reference>
+    <Reference Include="UnityStubs">      <HintPath>$(RimRoot)/UnityStubs.dll</HintPath>      <Private>false</Private></Reference>
+    <Reference Include="0Harmony">        <HintPath>$(HarmonyDll)</HintPath>                  <Private>false</Private></Reference>
+    <Reference Include="com.rlabrecque.steamworks.net"> <HintPath>$(RimRoot)/com.rlabrecque.steamworks.net.dll</HintPath> <Private>false</Private></Reference>
+  </ItemGroup>
+
+  <!-- Upstream compiles against a publicised Assembly-CSharp: it reads private UI members such as
+       MainButtonsRoot.allButtonsInOrder and MainTabWindow.resizer. Publicizer does the same at
+       compile time; at run time WaylithClr.SkipAccessChecks (RimWorld.runtimeconfig.json) lets the
+       private accesses through. -->
+  <ItemGroup>
+    <PackageReference Include="Krafs.Publicizer" Version="2.3.0" PrivateAssets="all" />
+    <Publicize Include="Assembly-CSharp" />
+  </ItemGroup>
+
+</Project>
