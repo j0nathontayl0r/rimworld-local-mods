@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 #
-# Sync this mod repo, then launch RimWorld. Linux half of the pair; see sync-and-play.ps1.
+# Sync this mod repo, then launch RimWorld. Runs on Linux and on Windows under Git Bash (which Git
+# for Windows ships), so both machines share one copy and the checks cannot drift apart.
 #
-# The local mods are symlinked into RimWorld's Mods/ folder, so a git pull changes what the
-# game loads the instant it completes. That is only safe while RimWorld is closed, which is exactly
+# The local mods are linked into RimWorld's Mods/ folder (symlinks on Linux, junctions on Windows),
+# so a git pull changes what the game loads the instant it completes. That is only safe while RimWorld is closed, which is exactly
 # what a launcher wrapper can guarantee - hence syncing here rather than from a cron job.
 #
 # Refuses to do anything clever. Every failure stops and explains itself:
@@ -20,16 +21,21 @@
 #   ./scripts/sync-and-play.sh                 # sync, then launch via Steam
 #   ./scripts/sync-and-play.sh --launcher none # sync only
 #   ./scripts/sync-and-play.sh --no-pull       # dry run
+#   ./scripts/sync-and-play.sh --launcher rimsort [--rimsort-path PATH]
+#
+# Set RIMWORLD_MODS_DIR if the game is not in the default Steam library for this OS.
 
 set -uo pipefail
 
 LAUNCHER="steam"
+RIMSORT_PATH=""
 NO_PULL=0
 while [ $# -gt 0 ]; do
     case "$1" in
         --launcher) LAUNCHER="${2:-steam}"; shift 2 ;;
+        --rimsort-path) RIMSORT_PATH="${2:-}"; shift 2 ;;
         --no-pull)  NO_PULL=1; shift ;;
-        -h|--help)  sed -n '2,25p' "$0"; exit 0 ;;
+        -h|--help)  sed -n '2,29p' "$0"; exit 0 ;;
         *) echo "unknown argument: $1" >&2; exit 2 ;;
     esac
 done
@@ -42,11 +48,26 @@ red()   { printf '  ABORT: %s\n' "$1" >&2; exit 1; }
 warn()  { printf '  WARN:  %s\n' "$1"; }
 ok()    { printf '  ok:    %s\n' "$1"; }
 
-printf '\nrimworld-local-mods sync\nrepo: %s\n\n' "$REPO"
+case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*) OS=windows ;;
+    *)                    OS=linux ;;
+esac
 
-# 1. RimWorld must be closed - the symlinks make a pull hot-swap the mod files. Only enforced when
+printf '\nrimworld-local-mods sync\nrepo: %s (%s)\n\n' "$REPO" "$OS"
+
+# The 1.7 executable is plain RimWorld[.exe]; 1.6 and earlier were RimWorldLinux / RimWorldWin64.exe.
+rimworld_running() {
+    if [ "$OS" = windows ]; then
+        # Git Bash has no pgrep, and its ps only sees MSYS processes. //X stops MSYS path-mangling /X.
+        tasklist.exe //FO CSV //NH 2>/dev/null | grep -qiE '^"RimWorld(Win64)?\.exe"'
+    else
+        pgrep -f 'RimWorldLinux|/RimWorld/RimWorld( |$)' >/dev/null 2>&1
+    fi
+}
+
+# 1. RimWorld must be closed - the links make a pull hot-swap the mod files. Only enforced when
 #    a pull could actually happen; with --no-pull nothing is written, so reporting is harmless.
-if pgrep -f 'RimWorldLinux|RimWorldWin64|/RimWorld/RimWorld( |$)' >/dev/null 2>&1; then
+if rimworld_running; then
     if [ "$NO_PULL" -eq 0 ]; then
         red "RimWorld is running. Close it first - pulling would swap mod files under the live game."
     fi
@@ -59,7 +80,7 @@ fi
 DIRTY="$(git -C "$REPO" status --porcelain)"
 if [ -n "$DIRTY" ]; then
     printf '  uncommitted changes:\n'
-    printf '      %s\n' "$DIRTY"
+    printf '%s\n' "$DIRTY" | sed 's/^/      /'
     red "Working tree is dirty. Commit, stash or discard before syncing."
 fi
 ok "working tree clean"
@@ -101,16 +122,32 @@ if [ "$AHEAD" -gt 0 ]; then
     git -C "$REPO" log --oneline origin/main..HEAD | sed 's/^/      /'
 fi
 
-# 6. Confirm the symlinks still resolve. A RimWorld file-verify removes them, and the game would
+# 6. Confirm the links still resolve. A RimWorld file-verify removes them, and the game would
 #    then start with the local mods simply missing rather than erroring.
-#    Adjust MODS_DIR if the Linux install lives elsewhere.
-MODS_DIR="${RIMWORLD_MODS_DIR:-/mnt/games/SteamLibrary/steamapps/common/RimWorld/Mods}"
+if [ "$OS" = windows ]; then
+    DEFAULT_MODS_DIR="/c/Program Files (x86)/Steam/steamapps/common/RimWorld/Mods"
+else
+    DEFAULT_MODS_DIR="/mnt/games/SteamLibrary/steamapps/common/RimWorld/Mods"
+fi
+MODS_DIR="${RIMWORLD_MODS_DIR:-$DEFAULT_MODS_DIR}"
 if [ -d "$MODS_DIR" ]; then
+    if [ "$OS" = windows ]; then
+        # Whether MSYS reports a junction as a symlink depends on its version, so ask Windows: /AL
+        # lists only reparse points (junctions and symlinks) in the folder.
+        LINKS="$(cmd.exe //c dir //AL //B "$(cygpath -w "$MODS_DIR")" 2>/dev/null | tr -d '\r')"
+    fi
     for m in LocalPatches LocalCSharpFixes LocalEarlyFixes LocalVisualExceptions; do
+        if [ "$OS" = windows ]; then
+            fix="cmd //c mklink /J \"$(cygpath -w "$MODS_DIR/$m")\" \"$(cygpath -w "$REPO/$m")\""
+            printf '%s\n' "$LINKS" | grep -qxF "$m"; linked=$?
+        else
+            fix="ln -s '$REPO/$m' '$MODS_DIR/$m'"
+            [ -L "$MODS_DIR/$m" ]; linked=$?
+        fi
         if [ ! -e "$MODS_DIR/$m" ]; then
-            warn "$m is MISSING from Mods/ - recreate with: ln -s '$REPO/$m' '$MODS_DIR/$m'"
-        elif [ ! -L "$MODS_DIR/$m" ]; then
-            warn "$m in Mods/ is a real directory, not a symlink - it will not track the repo"
+            warn "$m is MISSING from Mods/ - recreate with: $fix"
+        elif [ "$linked" -ne 0 ]; then
+            warn "$m in Mods/ is a real directory, not a link - it will not track the repo"
         fi
     done
 else
@@ -121,7 +158,9 @@ fi
 case "$LAUNCHER" in
     steam)
         printf '\nlaunching via Steam...\n'
-        if command -v steam >/dev/null 2>&1; then
+        if [ "$OS" = windows ]; then
+            cmd.exe //c start "" steam://rungameid/294100
+        elif command -v steam >/dev/null 2>&1; then
             steam steam://rungameid/294100 >/dev/null 2>&1 &
         else
             xdg-open steam://rungameid/294100 >/dev/null 2>&1 &
@@ -129,9 +168,10 @@ case "$LAUNCHER" in
         ;;
     rimsort)
         printf '\nlaunching RimSort...\n'
-        if command -v rimsort >/dev/null 2>&1; then rimsort >/dev/null 2>&1 &
-        elif command -v RimSort >/dev/null 2>&1; then RimSort >/dev/null 2>&1 &
-        else red "RimSort not found on PATH."; fi
+        rs="$RIMSORT_PATH"
+        [ -z "$rs" ] && rs="$(command -v rimsort || command -v RimSort || true)"
+        [ -n "$rs" ] || red "RimSort not found. Put it on PATH or pass --rimsort-path PATH."
+        "$rs" >/dev/null 2>&1 &
         ;;
     none) printf '\nsync only, not launching.\n' ;;
     *) red "unknown launcher: $LAUNCHER (expected steam|rimsort|none)" ;;
