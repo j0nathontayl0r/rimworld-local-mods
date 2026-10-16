@@ -2,9 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
-using RimWorld;      // Building_Trap, MassUtility, StatDefOf, StatExtension, Faction
+using RimWorld;      // Faction
 using RimWorld.Planet; // GlobalTargetInfo
-using UnityEngine;   // Mathf
 using Verse;
 
 namespace LocalEarlyFixes
@@ -19,7 +18,6 @@ namespace LocalEarlyFixes
         {
             GauntletCctorFix.Apply();
             var h = new Harmony("local.earlyfixes");
-            MineExtensionsSpringChanceFix.Apply(h);
             EnlistPatchAllFix.Apply(h);
         }
     }
@@ -211,94 +209,6 @@ namespace LocalEarlyFixes
             assocField.SetValue(null, dict);
             perShip.SetValue(null, 8);
             Log.Message("[LocalEarlyFixes] Gauntlet populated with " + dict.Count + " ship pair(s).");
-        }
-    }
-
-    // GrimWorld 40,000 - Core Imperialis (grimworld.core) ships mine_extensions.Building_TrapMassExplosive,
-    // which its own bundled source declares as a verbatim copy of RimWorld 1.5's
-    // RimWorld.Building_TrapExplosive (see 3018671708/Source/.../Building_TrapMassExplosive.cs, header
-    // comment "Assembly-CSharp, Version=1.5.9214.33606"). Its SpringChance calls Pawn.IsNonMutantAnimal,
-    // which 1.6 removed - Verse.Pawn now exposes IsAnimal and IsMutant separately (verified against
-    // Assembly-CSharp metadata) -> "System.MissingMethodException: Method not found:
-    // bool Verse.Pawn.get_IsNonMutantAnimal()".
-    //
-    // The prefix below reimplements SpringChance exactly as the mod's own source has it, substituting
-    // (IsAnimal && !IsMutant) for IsNonMutantAnimal, and returns false so the broken body never runs.
-    //
-    // CONFIRMED NOT TO WORK - kept as documentation, and because it costs nothing but a caught throw.
-    // Tested 2026-08-02: h.Patch fails with the very error it is trying to fix -
-    //   "[LocalEarlyFixes] SpringChance fix could not be applied:
-    //    Method not found: bool Verse.Pawn.get_IsNonMutantAnimal()"
-    // Harmony has to read the original method body to build its replacement, and reading resolves the
-    // dangling IsNonMutantAnimal token; the MissingMethodException stack traces go through
-    // RuntimeModule.ResolveMethodToken, which is exactly that step. This is not fixable from Harmony at
-    // all - prefix, postfix and transpiler all require reading the body first, so no variation helps.
-    // The remaining routes are a Prepatcher IL rewrite (Prepatcher is active at load order 0, and
-    // DefLoadCache uses the same FreePatch mechanism, so it is known to work in this setup) or an
-    // upstream mod update. The failure is logged at info level, not warning: it is the expected outcome
-    // now, and this whole exercise was about reducing log noise.
-    public static class MineExtensionsSpringChanceFix
-    {
-        public static void Apply(Harmony h)
-        {
-            try
-            {
-                var t = AccessTools.TypeByName("mine_extensions.Building_TrapMassExplosive");
-                if (t == null) { Log.Message("[LocalEarlyFixes] skip SpringChance fix (Mine-Extensions not present)"); return; }
-
-                var m = AccessTools.Method(t, "SpringChance");
-                if (m == null) { Log.Warning("[LocalEarlyFixes] skip SpringChance fix (method not found)"); return; }
-
-                h.Patch(m, prefix: new HarmonyMethod(typeof(MineExtensionsSpringChanceFix), "SpringChance_Prefix"));
-                Log.Message("[LocalEarlyFixes] SpringChance patched (IsNonMutantAnimal -> IsAnimal && !IsMutant).");
-            }
-            catch (Exception e)
-            {
-                // Info, not warning - see the class comment; this failure is expected and understood.
-                Log.Message("[LocalEarlyFixes] SpringChance fix not applied (expected, see source): " + e.Message);
-            }
-        }
-
-        // Typed as Building_Trap (the mod's base class) so we never reference the mod's assembly.
-        // reqMass and KnowsOfTrap are reached reflectively for the same reason.
-        public static bool SpringChance_Prefix(Building_Trap __instance, Pawn p, ref float __result)
-        {
-            try
-            {
-                var reqMass = 300f;   // the mod's declared default
-                var f = AccessTools.Field(__instance.GetType(), "reqMass");
-                if (f != null) reqMass = (float)f.GetValue(__instance);
-
-                if ((MassUtility.GearAndInventoryMass(p) + p.GetStatValue(StatDefOf.Mass)) < reqMass) { __result = 0f; return false; }
-                if (p.kindDef.immuneToTraps) { __result = 0f; return false; }
-
-                var num = 1f;
-                var knows = Traverse.Create(__instance).Method("KnowsOfTrap", new object[] { p }).GetValue<bool>();
-                if (knows)
-                {
-                    if (p.IsAnimal && !p.IsMutant)      // was: p.IsNonMutantAnimal
-                    {
-                        num = 0.2f;
-                        num *= __instance.def.building.trapPeacefulWildAnimalsSpringChanceFactor;
-                    }
-                    else
-                    {
-                        num = 0.25f;
-                    }
-                }
-
-                num *= __instance.GetStatValue(StatDefOf.TrapSpringChance) * p.GetStatValue(StatDefOf.PawnTrapSpringChance);
-                __result = Mathf.Clamp01(num);
-                return false;
-            }
-            catch (Exception e)
-            {
-                // Deliberately do NOT fall through to the original - it is the broken method. A trap that
-                // never springs is a smaller failure than an exception every time one is evaluated.
-                Log.Warning("[LocalEarlyFixes] SpringChance prefix failed, trap disabled this call: " + e.Message);
-                __result = 0f;
-                return false;
-            }
         }
     }
 

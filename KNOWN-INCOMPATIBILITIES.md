@@ -26,18 +26,14 @@ prevent. The stack proves it: the failure is inside
 `HarmonyLib.MethodBodyReader.ReadOperand` → `RuntimeModule.ResolveMethodToken`,
 i.e. during instruction reading, before any prefix/postfix/transpiler could run.
 Prefix, postfix and transpiler all require that same read, so no variation helps.
-`LocalEarlyFixes.MineExtensionsSpringChanceFix` keeps the attempt in source as
-documentation; it logs at Message level because failing is now the expected
-outcome:
-
-```
-[LocalEarlyFixes] SpringChance fix not applied (expected, see source): ...
-```
-
-Remaining routes: a **Prepatcher** IL rewrite (which edits IL before anything
-reads the method — Prepatcher is active at load order 0, and DefLoadCache uses
-the same FreePatch mechanism, so it is known to work in this setup), or an
-upstream GrimWorld fix.
+**Update 2026-10-17: it doesn't need fixing.** The class is dead code. Its only
+user is the abstract `TrapATBase` def, and no def in any installed mod inherits
+from it, so no such trap can be built and `SpringChance` never runs. The failed
+attempt (`LocalEarlyFixes.MineExtensionsSpringChanceFix`) was removed; see git
+history for it. The Prepatcher IL-rewrite route is also gone, because Prepatcher
+doesn't run on 1.7 (.NET 10). Revisit only if a mod starts inheriting
+`TrapATBase`: then a replacement class in LocalCSharpFixes plus an XML
+`thingClass` redirect would work, since nothing would need to read the broken body.
 
 Note the error is often reported by **Mod Error Checker**
 (`Taranchuk.ModErrorChecker`) rather than by our fix mods — it sweeps every
