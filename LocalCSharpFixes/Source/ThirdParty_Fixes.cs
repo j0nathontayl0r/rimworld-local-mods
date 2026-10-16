@@ -31,6 +31,7 @@ namespace LocalCSharpFixes
     //   void         CombatExtended.CompMechAmmo.TryMakeAmmoJob(bool forced = false)
     //   static IEnumerable<PawnKindDef> ColonyManagerRedux.Managers.Utilities_Hunting.GetMapPawnKindDefs(Map? map, bool animalsOnly = true)
     //   Job          CombatExtended.AI.CompTend.TryGiveTacticalJob()   (override; TendSelf job targeting SelPawn)
+    //   static void  ImprovedWorkbenches.ExtendedBillData_ExposeData.Postfix(Bill_Production __instance)   (BWM's own Harmony postfix)
     internal static class ThirdPartyPatches
     {
         // VSIE: GetChairFor calls ClosestThingReachable(food.Position, ...) without checking food.Spawned.
@@ -254,5 +255,17 @@ namespace LocalCSharpFixes
             __result = Enumerable.Empty<PawnKindDef>();
             return false;
         }
+
+        // Better Workbench Management (falconne.BWM, namespace ImprovedWorkbenches) postfixes
+        // Bill_Production.ExposeData with Find.World.GetComponent<ExtendedBillDataStorage>()...,
+        // assuming a bill is only ever scribed inside a game. Dubs Mint Menus also scribes bills
+        // outside one: its saved bench templates load from mod settings at startup, when there is
+        // no world, so every template bill NREs (34x "SaveableFromNode exception" plus 34x "Could
+        // not resolve cross refs" from the same postfix, then "Some bills were null after loading";
+        // observed 2026-10-17). Those bills are dropped, and a later settings save would make the
+        // loss permanent. BWM's extended data is per-save world state, meaningless for a template,
+        // so skip the postfix when no world exists. Dubs reads its settings in an
+        // ExecuteWhenFinished that runs after our static constructor, so this lands in time.
+        public static bool BWM_ExtendedBillExposeData_Prefix() => Current.Game?.World != null;
     }
 }

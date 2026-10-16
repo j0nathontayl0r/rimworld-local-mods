@@ -57,6 +57,8 @@ namespace LocalCSharpFixes
                       nameof(ThirdPartyPatches.CMR_MapPawnKinds_Prefix));
             TryPostfix(h, "CombatExtended.AI.CompTend", "TryGiveTacticalJob",
                       nameof(ThirdPartyPatches.CE_TendSelfJob_Postfix));
+            TryPrefix(h, "ImprovedWorkbenches.ExtendedBillData_ExposeData", "Postfix",
+                      nameof(ThirdPartyPatches.BWM_ExtendedBillExposeData_Prefix));
 
             GrimWorld40kFixes.Apply(h);
             VACLogSpamFixes.Apply(h);
