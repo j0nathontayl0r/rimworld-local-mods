@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using HarmonyLib;
-using RimWorld;      // Building_Trap, MassUtility, StatDefOf, StatExtension
+using RimWorld;      // Building_Trap, MassUtility, StatDefOf, StatExtension, Faction
+using RimWorld.Planet; // GlobalTargetInfo
 using UnityEngine;   // Mathf
 using Verse;
 
@@ -16,8 +18,78 @@ namespace LocalEarlyFixes
         public LocalEarlyFixesMod(ModContentPack content) : base(content)
         {
             GauntletCctorFix.Apply();
-            MineExtensionsSpringChanceFix.Apply(new Harmony("local.earlyfixes"));
+            var h = new Harmony("local.earlyfixes");
+            MineExtensionsSpringChanceFix.Apply(h);
+            EnlistPatchAllFix.Apply(h);
         }
+    }
+
+    // Enlist ([RH2] Faction: V.O.I.D., 2883208829, bundles Enlist.dll) patches from its Mod
+    // constructor with new Harmony("ChickenPlucker.Enlist").PatchAll(). One of its classes is
+    //
+    //     [HarmonyPatch(typeof(Faction), "TryAffectGoodwillWith")]
+    //     static void Postfix(Faction __instance, Faction other, int goodwillChange,
+    //                         bool canSendMessage, bool canSendHostilityLetter,
+    //                         string reason, GlobalTargetInfo? lookTarget)
+    //
+    // but the original's reason parameter has been a HistoryEventDef since 1.3. Harmony 2 bound it
+    // without checking; Harmony 3 (RimWorld 1.7) validates the type and throws "Unrelated classes
+    // cannot describe the same non-null object ... supplied RimWorld.HistoryEventDef, requested
+    // System.String". PatchAll stops at the first throw, so every Enlist class after that one goes
+    // unpatched and the exception aborts EnlistMod's constructor ("Error while instantiating a mod
+    // of type Enlist.EnlistMod", observed 2026-10-17).
+    //
+    // Fix: prefix PatchClassProcessor.Patch() and, for that one class only, skip it and register a
+    // correctly typed postfix that forwards to Enlist's own body with reason = null (the body never
+    // reads it, verified by decompiling the 1.6 DLL). With the throwing class gone, PatchAll carries
+    // on through the rest. Hooked on Patch() rather than Harmony.PatchAll(Assembly) because the
+    // latter is a two-line method the .NET JIT may already have inlined into PatchAll(), where a
+    // detour would never be reached. This must run before EnlistMod's constructor, hence here.
+    public static class EnlistPatchAllFix
+    {
+        private const string BrokenPatchType = "Enlist.Patch_TryAffectGoodwillWith";
+
+        private static Action<Faction, Faction, int, bool, bool, string, GlobalTargetInfo?> enlistPostfix;
+
+        public static void Apply(Harmony h)
+        {
+            try
+            {
+                if (AccessTools.TypeByName(BrokenPatchType) == null) { Log.Message("[LocalEarlyFixes] skip Enlist fix (Enlist not present)"); return; }
+                h.Patch(AccessTools.Method(typeof(PatchClassProcessor), nameof(PatchClassProcessor.Patch)),
+                        prefix: new HarmonyMethod(typeof(EnlistPatchAllFix), nameof(Patch_Prefix)));
+            }
+            catch (Exception e)
+            {
+                Log.Warning("[LocalEarlyFixes] Enlist fix failed to apply: " + e.Message);
+            }
+        }
+
+        public static bool Patch_Prefix(Harmony ___instance, Type ___containerType, ref List<MethodInfo> __result)
+        {
+            if (___containerType?.FullName != BrokenPatchType) return true;
+
+            __result = new List<MethodInfo>();
+            try
+            {
+                enlistPostfix = AccessTools.MethodDelegate<Action<Faction, Faction, int, bool, bool, string, GlobalTargetInfo?>>(
+                    AccessTools.Method(___containerType, "Postfix"));
+                // Registered under Enlist's own Harmony instance, so it is attributed to Enlist.
+                ___instance.Patch(AccessTools.Method(typeof(Faction), nameof(Faction.TryAffectGoodwillWith)),
+                                  postfix: new HarmonyMethod(typeof(EnlistPatchAllFix), nameof(TryAffectGoodwillWith_Postfix)));
+                Log.Message("[LocalEarlyFixes] Enlist goodwill postfix retyped (reason: string -> HistoryEventDef).");
+            }
+            catch (Exception e)
+            {
+                Log.Warning("[LocalEarlyFixes] Enlist goodwill postfix could not be retyped, skipped: " + e.Message);
+            }
+            return false;
+        }
+
+        public static void TryAffectGoodwillWith_Postfix(Faction __instance, Faction other, int goodwillChange,
+                                                         bool canSendMessage, bool canSendHostilityLetter,
+                                                         GlobalTargetInfo? lookTarget)
+            => enlistPostfix(__instance, other, goodwillChange, canSendMessage, canSendHostilityLetter, null, lookTarget);
     }
 
     // VFEPirates.PawnsArrivalModeWorker_Gauntlet (VFE Pirates, 2723801948) declares:

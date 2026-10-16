@@ -16,7 +16,8 @@ so its constructor runs during CreateModClasses, and it MUST sit near the top of
 (immediately after the official DLCs, before any content mod).
 
 Currently fixes: VFEPirates.PawnsArrivalModeWorker_Gauntlet type-initialiser failure, which also
-aborts Coventech Mechsuit Framework's mod instantiation.</description>
+aborts Coventech Mechsuit Framework's mod instantiation.
+Also lets Enlist (bundled with [RH2] Faction: V.O.I.D.) patch on 1.7 despite a mistyped postfix.</description>
   <!-- Ordering metadata so RimSort's auto-sort keeps this mod pinned near the top (it silently
        scattered the local mods once, 2026-08-22, breaking load-order-dependent fixes).
        loadAfter: the self-sorting framework mods that legitimately sit above us.
@@ -31,6 +32,7 @@ aborts Coventech Mechsuit Framework's mod instantiation.</description>
   </loadAfter>
   <loadBefore>
     <li>OskarPotocki.VFE.Pirates</li>
+    <li>RH2.Faction.VOID</li>
     <li>OskarPotocki.VanillaFactionsExpanded.Core</li>
     <li>SmashPhil.VehicleFramework</li>
     <li>imranfish.xmlextensions</li>
