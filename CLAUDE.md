@@ -21,6 +21,9 @@ holds the old email); reset it to `origin/main` instead. One fix per commit; pus
   `1.7/Assemblies/`. Each C# mod's `LoadFolders.xml` loads exactly one DLL per game version.
 - Harmony on 1.7 is 3.x and checks patch parameter types. Patches whose types were wrong but
   tolerated by Harmony 2 now throw, and one bad class aborts a mod's whole `PatchAll`.
+- `Thread.Abort()` throws `PlatformNotSupportedException` on .NET 10 (Prepatcher dies of it; ReGrowth
+  world gen did too). Replace it with the mod's own cancellation flag plus `Join()`, never by
+  swallowing the exception.
 - Workshop mods without a `1.7/` folder fall back to their 1.6 build. Treat their DLLs as untested
   on 1.7.
 

@@ -1,4 +1,6 @@
 using System;
+using System.Reflection;
+using System.Threading;
 using HarmonyLib;
 using RimWorld;
 using RimWorld.Planet;
@@ -60,6 +62,52 @@ namespace LocalCSharpFixes
             var prefix = new HarmonyMethod(typeof(ReGrowthWorldGenFixes), nameof(SkipWhilePreviewGenerating));
             h.Patch(AccessTools.Method(typeof(World), nameof(World.WorldUpdate)), prefix: prefix);
             h.Patch(AccessTools.Method(typeof(WorldInterface), nameof(WorldInterface.WorldInterfaceOnGUI)), prefix: prefix);
+
+            ApplyCancelInsteadOfAbort(h, t);
+        }
+
+        // ReGrowth's Page_CreateWorldParams_CanDoNext.Prefix (runs when "Next" is pressed) stops a
+        // still-running preview with thread.Abort(); thread.Join(1000). RimWorld 1.7 runs on .NET 10,
+        // where Thread.Abort always throws PlatformNotSupportedException, so pressing Next threw
+        // "Exception filling window for RimWorld.Page_CreateWorldParams" and the world could not be
+        // created while a preview thread existed (observed 2026-10-17). The mod already has
+        // cooperative cancellation for its own regenerate path: generateWorld checks the volatile
+        // shouldCancelGeneration between every setup and gen step, and its finally block pops Rand,
+        // nulls Current.CreatingWorld and restores ProgramState. So: request cancellation, wait for
+        // the worker to finish, then clear the field so the original prefix skips its Abort and only
+        // resets generatingWorld. The wait is unbounded on purpose - letting vanilla start the real
+        // world while the worker still writes Current.CreatingWorld would corrupt it, and the worst
+        // case is a pause of one gen step.
+        // Signatures verified against the installed 1.6 DLL:
+        //   public static void RGExpandedWorldGeneration.Page_CreateWorldParams_CanDoNext.Prefix()
+        //   public static Thread Page_CreateWorldParams_DoWindowContents.thread
+        //   private static volatile bool Page_CreateWorldParams_DoWindowContents.shouldCancelGeneration
+        private static FieldInfo threadField, cancelField;
+
+        private static void ApplyCancelInsteadOfAbort(Harmony h, Type windowContents)
+        {
+            var canDoNext = AccessTools.Method("RGExpandedWorldGeneration.Page_CreateWorldParams_CanDoNext:Prefix");
+            threadField = AccessTools.Field(windowContents, "thread");
+            cancelField = AccessTools.Field(windowContents, "shouldCancelGeneration");
+            if (canDoNext == null || threadField?.FieldType != typeof(Thread) || cancelField?.FieldType != typeof(bool))
+            {
+                Log.Warning("[LocalCSharpFixes] skip ReGrowth Next-button abort fix (mod layout changed?)");
+                return;
+            }
+            try { h.Patch(canDoNext, prefix: new HarmonyMethod(typeof(ReGrowthWorldGenFixes), nameof(CancelPreviewInsteadOfAbort))); }
+            catch (Exception e) { Log.Warning($"[LocalCSharpFixes] failed patching ReGrowth CanDoNext: {e.Message}"); }
+        }
+
+        public static void CancelPreviewInsteadOfAbort()
+        {
+            if (threadField.GetValue(null) is not Thread thread)
+                return;
+            if (thread.IsAlive)
+            {
+                cancelField.SetValue(null, true);
+                thread.Join();
+            }
+            threadField.SetValue(null, null); // original prefix now skips Abort()
         }
 
         public static bool SkipWhilePreviewGenerating()
