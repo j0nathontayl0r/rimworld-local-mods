@@ -129,6 +129,13 @@ have the old address. History was rewritten on 2026-10-16 to remove the old emai
 before then still carries the old commits, so reset it with `git fetch && git reset --hard
 origin/main` instead of pushing from it.
 
+## `modlists/`
+Dated snapshots of the active mod list, written by `./scripts/export-modlist.py`: a raw
+`ModsConfig_<os>_<date>.xml` (restore it into the game's `Config/` folder or import it into RimSort to get the
+exact load order back) and an `active-mods_<os>_<date>.md` table of names, packageIds and workshop
+links. Re-run the script after changing the mod list. It works on either machine (Python required;
+override paths with `RIMWORLD_DIR`, `RIMWORLD_WORKSHOP_DIR`, `RIMWORLD_CONFIG_DIR`).
+
 ## `recovered-spec/`
 The original design/triage notes (recovered from a backup) documenting what each patch fixes and why.
 

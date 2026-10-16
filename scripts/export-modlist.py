@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+"""Snapshot the active RimWorld mod list into modlists/.
+
+Writes two files per run, named for the OS and date:
+  modlists/ModsConfig_<os>_<date>.xml   raw copy of the game's ModsConfig.xml (RimSort writes the
+                                        same file), importable into RimSort or dropped back into
+                                        Config/ to restore the exact load order
+  modlists/active-mods_<os>_<date>.md   readable table: load order, name, packageId, where it loads from
+
+Each packageId is resolved against the official Data/ folders, the game's Mods/ folder and the
+workshop folder. When a packageId exists both locally and on the workshop, the game loads the local
+copy (the workshop one is listed as "<id>_steam"), so the table reports that, which is how the
+LocalVisualExceptions / workshop Visual Exceptions pair shows up correctly.
+
+Usage: ./scripts/export-modlist.py
+Override paths with RIMWORLD_DIR, RIMWORLD_WORKSHOP_DIR and RIMWORLD_CONFIG_DIR.
+"""
+import datetime
+import os
+import platform
+import re
+import shutil
+import sys
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+
+if platform.system() == "Windows" or os.environ.get("MSYSTEM"):
+    OS = "windows"
+    STEAM = Path("C:/Program Files (x86)/Steam/steamapps")
+    CONFIG = Path(os.path.expandvars("%USERPROFILE%")) / "AppData/LocalLow/Ludeon Studios/RimWorld by Ludeon Studios/Config"
+else:
+    OS = "linux"
+    STEAM = Path("/mnt/games/SteamLibrary/steamapps")
+    CONFIG = Path.home() / ".config/unity3d/Ludeon Studios/RimWorld by Ludeon Studios/Config"
+
+GAME = Path(os.environ.get("RIMWORLD_DIR", STEAM / "common/RimWorld"))
+WORKSHOP = Path(os.environ.get("RIMWORLD_WORKSHOP_DIR", STEAM / "workshop/content/294100"))
+CONFIG = Path(os.environ.get("RIMWORLD_CONFIG_DIR", CONFIG))
+
+
+def read_about(mod_dir):
+    """Return (packageId, name) from About/About.xml, or None. Some mods ship malformed XML
+    (stray BOMs, unescaped &), so fall back to a regex over the top-level tags."""
+    about = mod_dir / "About" / "About.xml"
+    if not about.is_file():
+        return None
+    text = about.read_text(encoding="utf-8-sig", errors="replace")
+    try:
+        root = ET.fromstring(text)
+        pid, name = root.findtext("packageId"), root.findtext("name")
+    except ET.ParseError:
+        # Strip dependency blocks first: they carry other mods' packageIds.
+        top = re.sub(r"<(modDependencies\w*|loadAfter\w*|loadBefore\w*|incompatibleWith\w*)>.*?</\1>", "", text, flags=re.S)
+        pid = (re.search(r"<packageId>\s*(.*?)\s*</packageId>", top) or [None, None])[1]
+        name = (re.search(r"<name>\s*(.*?)\s*</name>", top) or [None, None])[1]
+    if not pid:
+        return None
+    return pid.strip().lower(), (name or mod_dir.name).strip()
+
+
+def index(root, source):
+    found = {}
+    if root.is_dir():
+        for d in sorted(root.iterdir()):
+            info = read_about(d) if d.is_dir() else None
+            if info:
+                found.setdefault(info[0], (info[1], source, d))
+    return found
+
+
+def main():
+    cfg = CONFIG / "ModsConfig.xml"
+    if not cfg.is_file():
+        sys.exit(f"ModsConfig.xml not found at {cfg} - set RIMWORLD_CONFIG_DIR")
+    root = ET.parse(cfg).getroot()
+    version = root.findtext("version") or "?"
+    active = [li.text.strip() for li in root.find("activeMods") if li.text]
+
+    official = index(GAME / "Data", "official")
+    local = index(GAME / "Mods", "local")
+    workshop = index(WORKSHOP, "workshop")
+
+    rows, missing = [], 0
+    for i, entry in enumerate(active, 1):
+        pid = entry.lower()
+        steam_suffix = pid.endswith("_steam")
+        if steam_suffix:
+            pid = pid[: -len("_steam")]
+        hit = (workshop.get(pid) if steam_suffix else None) or official.get(pid) or local.get(pid) or workshop.get(pid)
+        if not hit:
+            missing += 1
+            rows.append((i, "**NOT INSTALLED**", entry, "-"))
+            continue
+        name, source, path = hit
+        if source == "workshop":
+            where = f"workshop [{path.name}](https://steamcommunity.com/sharedfiles/filedetails/?id={path.name})"
+        elif source == "local":
+            target = path.resolve()
+            where = f"local `Mods/{path.name}`" + (f" -> repo" if REPO in target.parents else "")
+            if pid in workshop:
+                where += f" (shadows workshop {workshop[pid][2].name})"
+        else:
+            where = "official"
+        rows.append((i, name.replace("|", "\\|"), entry, where))
+
+    date = datetime.date.today().isoformat()
+    out = REPO / "modlists"
+    out.mkdir(exist_ok=True)
+    raw = out / f"ModsConfig_{OS}_{date}.xml"
+    md = out / f"active-mods_{OS}_{date}.md"
+    shutil.copyfile(cfg, raw)
+
+    lines = [
+        f"# Active mods - {OS}, {date}",
+        "",
+        f"RimWorld {version}, {len(active)} active mods in load order"
+        + (f", {missing} not installed." if missing else "."),
+        f"Generated by `scripts/export-modlist.py` from `ModsConfig.xml`; raw copy: [`{raw.name}`]({raw.name}).",
+        "",
+        "| # | Name | packageId | Source |",
+        "|---:|---|---|---|",
+    ]
+    lines += [f"| {i} | {name} | `{pid}` | {where} |" for i, name, pid, where in rows]
+    md.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"{len(active)} active mods ({missing} not installed)\n  {raw.relative_to(REPO)}\n  {md.relative_to(REPO)}")
+
+
+if __name__ == "__main__":
+    main()
