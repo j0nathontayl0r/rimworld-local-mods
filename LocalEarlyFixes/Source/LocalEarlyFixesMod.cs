@@ -19,6 +19,45 @@ namespace LocalEarlyFixes
             GauntletCctorFix.Apply();
             var h = new Harmony("local.earlyfixes");
             EnlistPatchAllFix.Apply(h);
+            HarGraphicsHookRaceFix.Apply(h);
+        }
+    }
+
+    // Humanoid Alien Races: each AlienPartGenerator adds itself to the static HashSet graphicsQueue
+    // from ThingDef_AlienRace.ResolveReferences - on the def-loading thread - and subscribes
+    // LoadGraphicsHook to Application.onBeforeRender, which runs on the main thread every frame and
+    // enumerates that set. Faster Game Loading releases the hook early (once all mod content is
+    // loaded, before defs finish resolving), so the two overlap and the enumeration throws
+    // "Collection was modified; enumeration operation may not execute" (once, at startup; observed
+    // 2026-10-17). It is self-healing: the throw happens before graphicsQueue.Clear() and before
+    // the hook unsubscribes, so the next frame re-runs it over the full queue. A real fix would mean
+    // changing load timing for every race, so instead a finalizer turns just this exception, from
+    // just this method, into a warning. Swallowing it keeps the original's state - queue intact,
+    // hook still subscribed - so the retry is unchanged. Must be applied before loading starts,
+    // hence here and not in LocalCSharpFixes.
+    // Signature verified against the installed 1.7 DLL (839005762/1.7):
+    //   public static void AlienRace.AlienPartGenerator.LoadGraphicsHook()
+    public static class HarGraphicsHookRaceFix
+    {
+        public static void Apply(Harmony h)
+        {
+            try
+            {
+                var hook = AccessTools.Method("AlienRace.AlienPartGenerator:LoadGraphicsHook");
+                if (hook == null) { Log.Message("[LocalEarlyFixes] skip HAR graphics-hook fix (Humanoid Alien Races not present)"); return; }
+                h.Patch(hook, finalizer: new HarmonyMethod(typeof(HarGraphicsHookRaceFix), nameof(Finalizer)));
+            }
+            catch (Exception e)
+            {
+                Log.Warning("[LocalEarlyFixes] HAR graphics-hook fix failed to apply: " + e.Message);
+            }
+        }
+
+        public static Exception Finalizer(Exception __exception)
+        {
+            if (__exception is not InvalidOperationException) return __exception;
+            Log.Warning("[LocalEarlyFixes] HAR graphics queue changed while loading (def loading still running); retrying next frame.");
+            return null;
         }
     }
 
