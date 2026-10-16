@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix24: Combat Extended Armory (2911110083) lists CE's generic AmmoSet_ArtilleryShell in the
+       electric autoloader's additionalAmmoSets. The Generic Ammo Experience (3284460811,
+       packageId Rosalina.Mating.Press) deletes that set in favour of the calibre-specific howitzer
+       sets -> "Could not resolve cross-reference to CombatExtended.AmmoSetDef named
+       AmmoSet_ArtilleryShell (wanter=additionalAmmoSets)". Keyed on the set actually being gone
+       rather than on mod names, so it does nothing if GAE stops removing it or is dropped. Relies on
+       loading after GAE (loadAfter lists both mods). -->
+  <Operation Class="PatchOperationConditional">
+    <success>Always</success>
+    <xpath>Defs/CombatExtended.AmmoSetDef[defName="AmmoSet_ArtilleryShell"]</xpath>
+    <nomatch Class="PatchOperationRemove">
+      <success>Always</success>
+      <xpath>Defs/ThingDef/comps/li[@Class="CombatExtended.CompProperties_AmmoListUser"]/additionalAmmoSets/li[text()="AmmoSet_ArtilleryShell"]</xpath>
+    </nomatch>
+  </Operation>
+</Patch>
