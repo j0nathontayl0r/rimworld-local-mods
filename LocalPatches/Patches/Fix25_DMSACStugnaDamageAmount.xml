@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix25: DMS Ancient Corps (3469398006, Aoba.DeadManSwitch.AncientCorps) deploys its Stugna
+       ATGM turret via the projectile DMSAC_Grenade_Stugna (Projectile_SpawnsThing), which sets
+       neither damageDef nor damageAmountBase. Anything asking for its damage - MVCF's multi-verb
+       info-card stats, reached on new game through Apparel Policy Builder's def scan - hits
+       ProjectileProperties.GetDamageAmount's fallback and logs "Failed to find sane damage
+       amount" (ErrorOnce). The projectile does no damage, so 0 is the true value; nothing else
+       reads it because the projectile only spawns the turret. Added only if absent, so an upstream
+       fix wins. -->
+  <Operation Class="PatchOperationConditional">
+    <success>Always</success>
+    <xpath>Defs/ThingDef[defName="DMSAC_Grenade_Stugna"]/projectile/damageAmountBase</xpath>
+    <nomatch Class="PatchOperationAdd">
+      <success>Always</success>
+      <xpath>Defs/ThingDef[defName="DMSAC_Grenade_Stugna"]/projectile</xpath>
+      <value>
+        <damageAmountBase>0</damageAmountBase>
+      </value>
+    </nomatch>
+  </Operation>
+</Patch>
