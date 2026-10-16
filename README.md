@@ -55,8 +55,10 @@ Harmony's `1.7/Assemblies`, and writes `1.7/Assemblies/`. `LoadFolders.xml` make
 `Assemblies/` and 1.7 load only `1.7/` — listing both under `<v1.7>` would apply every patch twice.
 ```
 dotnet build LocalCSharpFixes/Source/v1.7/LocalCSharpFixes.csproj
+dotnet build LocalEarlyFixes/Source/v1.7/LocalEarlyFixes.csproj
 ```
-`LocalVisualExceptions` is 1.7-only and builds the same way from its own `Source/`.
+`LocalEarlyFixes` has the same 1.6/1.7 split. `LocalVisualExceptions` is 1.7-only and builds the
+same way from its own `Source/`.
 
 Two non-obvious details are documented inline in the `.csproj` files: `netstandard.dll` must be
 referenced explicitly (Unity type-forwards through it), and a `NoCopyLocal` target clears
