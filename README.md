@@ -115,6 +115,13 @@ the 1.7 DLLs in `1.7/Assemblies/` only on a 1.7 install. After a C# change, rebu
 for your own version, and expect the other version's DLL to stay stale until that machine rebuilds it
 — it still loads, it just lacks the change.
 
+## Committing
+This repo is public, so commit as `Jonathon Taylor <github@jdtay.com>`, never `jonathon@jdtay.com`.
+Set it per clone with `git config user.email github@jdtay.com`; the global git config may still
+have the old address. History was rewritten on 2026-10-16 to remove the old email. Any clone made
+before then still carries the old commits, so reset it with `git fetch && git reset --hard
+origin/main` instead of pushing from it.
+
 ## `recovered-spec/`
 The original design/triage notes (recovered from a backup) documenting what each patch fixes and why.
 
