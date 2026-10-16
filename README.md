@@ -72,6 +72,7 @@ Developed here on a backed-up drive and linked into the RimWorld `Mods/` folder:
 Mods/LocalPatches      -> .../rimworld-local-mods/LocalPatches
 Mods/LocalCSharpFixes  -> .../rimworld-local-mods/LocalCSharpFixes
 Mods/LocalEarlyFixes   -> .../rimworld-local-mods/LocalEarlyFixes
+Mods/LocalVisualExceptions -> .../rimworld-local-mods/LocalVisualExceptions
 ```
 On Windows use junctions (`mklink /J`) rather than symlinks — they need no elevation and RimWorld
 follows them transparently. Never link into `steamapps/workshop/content/294100/`: Steam owns that

@@ -106,7 +106,7 @@ if ($ahead -gt 0) {
 # 6. Confirm the junctions still resolve. A RimWorld file-verify deletes them, and the game would
 #    then start with the local mods simply missing rather than erroring.
 $modsDir = "C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods"
-foreach ($m in 'LocalPatches', 'LocalCSharpFixes', 'LocalEarlyFixes') {
+foreach ($m in 'LocalPatches', 'LocalCSharpFixes', 'LocalEarlyFixes', 'LocalVisualExceptions') {
     $p = Join-Path $modsDir $m
     $item = Get-Item $p -ErrorAction SilentlyContinue
     if (-not $item)            { Warn "$m is MISSING from Mods/ - recreate with: mklink /J `"$p`" `"$repo\$m`"" }

@@ -2,7 +2,7 @@
 #
 # Sync this mod repo, then launch RimWorld. Linux half of the pair; see sync-and-play.ps1.
 #
-# The three local mods are symlinked into RimWorld's Mods/ folder, so a git pull changes what the
+# The local mods are symlinked into RimWorld's Mods/ folder, so a git pull changes what the
 # game loads the instant it completes. That is only safe while RimWorld is closed, which is exactly
 # what a launcher wrapper can guarantee - hence syncing here rather than from a cron job.
 #
@@ -46,7 +46,7 @@ printf '\nrimworld-local-mods sync\nrepo: %s\n\n' "$REPO"
 
 # 1. RimWorld must be closed - the symlinks make a pull hot-swap the mod files. Only enforced when
 #    a pull could actually happen; with --no-pull nothing is written, so reporting is harmless.
-if pgrep -f 'RimWorldLinux|RimWorldWin64' >/dev/null 2>&1; then
+if pgrep -f 'RimWorldLinux|RimWorldWin64|/RimWorld/RimWorld( |$)' >/dev/null 2>&1; then
     if [ "$NO_PULL" -eq 0 ]; then
         red "RimWorld is running. Close it first - pulling would swap mod files under the live game."
     fi
@@ -106,7 +106,7 @@ fi
 #    Adjust MODS_DIR if the Linux install lives elsewhere.
 MODS_DIR="${RIMWORLD_MODS_DIR:-/mnt/games/SteamLibrary/steamapps/common/RimWorld/Mods}"
 if [ -d "$MODS_DIR" ]; then
-    for m in LocalPatches LocalCSharpFixes LocalEarlyFixes; do
+    for m in LocalPatches LocalCSharpFixes LocalEarlyFixes LocalVisualExceptions; do
         if [ ! -e "$MODS_DIR/$m" ]; then
             warn "$m is MISSING from Mods/ - recreate with: ln -s '$REPO/$m' '$MODS_DIR/$m'"
         elif [ ! -L "$MODS_DIR/$m" ]; then
