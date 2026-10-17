@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Concurrent;
 using HarmonyLib;
+using RimWorld;
 using Verse;
+using Verse.AI;
 
 namespace LocalCSharpFixes
 {
@@ -39,6 +41,42 @@ namespace LocalCSharpFixes
             {
                 Log.Warning($"[LocalCSharpFixes] failed patching GenTypes.IsSealedWithCache: {e.Message}");
             }
+
+            try
+            {
+                var m = AccessTools.Method(typeof(JobDriver_SocialRelax), nameof(JobDriver.TryMakePreToilReservations));
+                h.Patch(m, prefix: new HarmonyMethod(typeof(Vanilla17Fixes), nameof(SocialRelaxReservations_Prefix)));
+            }
+            catch (Exception e)
+            {
+                Log.Warning($"[LocalCSharpFixes] failed patching JobDriver_SocialRelax.TryMakePreToilReservations: {e.Message}");
+            }
+        }
+
+        // Vanilla (1.7): JobDriver_SocialRelax.TryMakePreToilReservations(errorOnFailed) calls
+        // pawn.ReserveSittableOrSpot(cell, pawn.CurJob) without passing errorOnFailed, so it always
+        // logs "Could not reserve" when the seat is taken. A queued job starts with errorOnFailed =
+        // false and is allowed to fail here (seen 2026-10-17: Loreen's queued SocialRelax after Stomp
+        // took the chair). Work out the same seat cell as vanilla; if it can't be reserved, fail
+        // quietly. A player-forced job keeps vanilla's path, because Reserve lets it take the seat.
+        public static bool SocialRelaxReservations_Prefix(JobDriver_SocialRelax __instance, bool errorOnFailed, ref bool __result)
+        {
+            Job job = __instance.job;
+            Pawn pawn = __instance.pawn;
+            if (errorOnFailed || job == null || job.playerForced || pawn == null)
+                return true;
+            Thing chair = job.GetTarget(TargetIndex.B).Thing;
+            if (chair == null || !Toils_Ingest.TryFindFreeSittingSpotOnThing(chair, pawn, out var cell))
+                cell = job.GetTarget(TargetIndex.B).Cell;
+            if (pawn.Map == null || cell.Impassable(pawn.Map))
+                return true;
+            // Same target choice as ReservationUtility.ReserveSittableOrSpot.
+            Building edifice = cell.GetEdifice(pawn.Map);
+            LocalTargetInfo target = edifice == null || edifice.def.building.multiSittable ? cell : edifice;
+            if (pawn.CanReserve(target))
+                return true;
+            __result = false;
+            return false;
         }
 
         public static bool IsSealedWithCache_Prefix(Type type, ref bool __result)
