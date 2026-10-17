@@ -20,38 +20,76 @@
     <li>brothority.cratesforchunks</li>
     <li>oskarpotocki.vanillafactionsexpanded.core</li>
     <li>ebsg.framework</li>
-    <li>mlie.reinforcedmechanoid2</li>
-    <li>oskarpotocki.vfe.empire</li>
     <li>det.spacerarsenal</li>
     <li>oskarpotocki.vfe.insectoid2</li>
-    <li>vanillaexpanded.vcef</li>
-    <li>vanillaexpanded.vpsycastse</li>
     <li>vanillaracesexpanded.android</li>
-    <li>proxyer.steamgeyserbuilding</li>
+    <li>vanillaexpanded.vwe</li>
+    <li>sarg.alphamemes</li>
+    <li>veltaris.framework</li>
+    <li>nals.facialanimation</li>
+    <li>rh2.faction.void</li>
+    <li>teok25.archotechexpanded</li>
+    <li>dubwise.dubsbadhygiene</li>
+    <li>oskarpotocki.vfe.pirates</li>
+    <li>mlie.reinforcedmechanoid2</li>
+    <li>dubwise.rimatomics</li>
+    <li>aelanna.eccentrictech.core</li>
+    <li>el.mow</li>
+    <li>spino.megafauna</li>
+    <li>arquebus.morepersonatraits</li>
+    <li>ogliss.thewhitecrayon.quarry</li>
+    <li>jaxe.rimhud</li>
+    <li>ushanka.glittertechexpansion</li>
+    <li>vanillaexpanded.basegeneration</li>
+    <li>vanillaexpanded.vfecore</li>
+    <li>vanillaexpanded.vfearchitect</li>
+    <li>vanillaexpanded.vfeart</li>
+    <li>vanillaexpanded.vfemedical</li>
+    <li>vanillaexpanded.vfesecurity</li>
+    <li>vanillaexpanded.vfespacer</li>
+    <li>vanillaracesexpanded.hussar</li>
+    <li>vanillaracesexpanded.sanguophage</li>
+    <li>oskarpotocki.vanillavehiclesexpanded</li>
+    <li>vanillaexpanded.vwehw</li>
+    <li>vanillaquestsexpanded.ancients</li>
+    <li>veltaris.mechtech</li>
+    <li>sobb.advancedmechanoids</li>
+    <li>erdelf.humanoidalienraces</li>
+    <li>vanillaexpanded.vpsycastse</li>
+    <li>oskarpotocki.vfe.empire</li>
+    <li>sarg.alphaanimals</li>
+    <li>oskarpotocki.vfe.deserters</li>
+    <li>elsov.beliar</li>
+    <li>bucko.royalarsenal</li>
+    <li>vanillaexpanded.vpe.hemosage</li>
+    <li>rebuild.cotr.doorsandcorners</li>
+    <li>petetimessix.researchreinvented</li>
+    <li>bucko.royalarsenal.specialtyweapons</li>
+    <li>oskarpotocki.vanillavehiclesexpandedtier3</li>
+    <li>teiwaz.gtgtradercore</li>
+    <li>vanillaexpanded.skills</li>
+    <li>vanillaexpanded.vcef</li>
+    <li>sarg.alphamechs</li>
+    <li>vanillaexpanded.vcefaddon</li>
+    <li>hlx.ultratechalteredcarbon</li>
+    <li>regrowth.botr.core</li>
+    <li>rh2.metal.gear.solid</li>
+    <li>ceteam.combatextended</li>
+    <li>aoba.framework</li>
+    <li>ceteam.combatextendedarmory</li>
+    <li>ceteam.combatextendedguns</li>
+    <li>aoba.deadmanswitch.core</li>
+    <li>jdtay.replacestuff</li>
     <li>forti.rimmarket</li>
     <li>kazepsi.irbm</li>
-    <li>sarg.alphamemes</li>
     <li>atmnou.exomech</li>
     <li>kathanon.fixstyledblueprints</li>
-    <li>japester.upscaledtextures.4x</li>
-    <li>vanillaexpanded.vwe</li>
-    <li>sarg.alphaanimals</li>
-    <li>sarg.alphamechs</li>
-    <li>oskarpotocki.vfe.deserters</li>
-    <li>oskarpotocki.vfe.pirates</li>
-    <li>vanillaexpanded.vcefaddon</li>
-    <li>ceteam.combatextended</li>
     <li>aoba.exosuit.framework</li>
-    <li>aoba.framework</li>
     <li>defaults.1trickpwnyta</li>
     <li>odysseypatch.1trickpwnyta</li>
-    <li>veltaris.framework</li>
     <li>veltaris.mechanoidskins</li>
     <li>btd.remix.gravshipblueprints</li>
-    <li>savestoragesettings.kv.rw.fishtmp</li>
-    <li>nals.facialanimation</li>
     <li>og.recruit.guest</li>
-    <li>rh2.faction.void</li>
     <li>tradingpost.programmerlily.com</li>
     <li>hmc.wall.furniture</li>
     <li>samhunt.localmineralscanner</li>
@@ -61,15 +99,10 @@
     <li>sbz.gravshipstorage</li>
     <li>sbz.neatstorage</li>
     <li>darjeeling.battlecloak</li>
-    <li>hlx.ultratechalteredcarbon</li>
     <li>gogatio.alwaysdraftyourmechs</li>
     <li>colossalfossil.animalsarefuncontinued</li>
-    <li>skyl3lazer.apparelpolicybuilder</li>
     <li>bart.wbe</li>
-    <li>teok25.archotechexpanded</li>
-    <li>mlie.askbeforeenter</li>
     <li>poncho.automatichydroponics</li>
-    <li>elsov.beliar</li>
     <li>gwinnbleidd.mothballedanddeadpawns</li>
     <li>falconne.bwm</li>
     <li>redmattis.biggergravship</li>
@@ -79,76 +112,54 @@
     <li>void.charactereditor</li>
     <li>ferny.chesterchoose</li>
     <li>dylan.csl</li>
-    <li>crashm.colorcodedmoodbar.11</li>
-    <li>ceteam.combatextendedarmory</li>
-    <li>mlie.combatreadinesscheck</li>
     <li>mrhydralisk.complementaryodyssey</li>
     <li>shashlichnik.deepanddeeper</li>
     <li>merthsoft.designatorshapes</li>
     <li>dracoix.doormat.r12a</li>
     <li>dubwise.dubspaintshop</li>
-    <li>dubwise.dubsbadhygiene</li>
-    <li>dubwise.dubsmintmenus</li>
     <li>dubwise.dubsmintminimap</li>
-    <li>dubwise.rimatomics</li>
     <li>collapse.dunesofrim.atreides</li>
     <li>collapse.dunesofrim.harkonnen</li>
-    <li>aelanna.eccentrictech.core</li>
     <li>aelanna.eccentrictech.furniture</li>
     <li>mlie.enterhere</li>
     <li>kathanon.floatsubmenu</li>
-    <li>hawkwood.floorsarealmostworthless</li>
-    <li>botchjob.gallatrossandfriendsretextured</li>
     <li>defi.generipper</li>
     <li>tac.genetrader</li>
     <li>m00nl1ght.geologicallandforms</li>
-    <li>memegoddess.giddyup</li>
-    <li>gideon.stackablechunks</li>
     <li>gguake.grazingarea</li>
     <li>avilmask.grazinglands</li>
     <li>grimworld.framework</li>
-    <li>mlie.haulminedchunks</li>
     <li>adamas.hospital</li>
     <li>ilyvion.laboratory</li>
-    <li>jaxe.bubbles</li>
     <li>kota.inventorytab</li>
     <li>mlie.justputitoverthere</li>
     <li>vaguelysexual.modpackageid.goeshere</li>
     <li>funstab.lastwish</li>
     <li>m00nl1ght.unofficialupdates.hugslogpublisher</li>
     <li>asf.deepstorage</li>
-    <li>el.mow</li>
     <li>zylle.mapdesigner</li>
     <li>m00nl1ght.mappreview</li>
     <li>el.invmech</li>
     <li>kierannkkt.mechlordwarcasket</li>
-    <li>samael.npcmechsandanimals</li>
-    <li>spino.megafauna</li>
     <li>notfood.mendandrecycle</li>
     <li>migcorp.skiptech</li>
     <li>rabiosus.minesight</li>
     <li>haplo.miscellaneous.training</li>
     <li>taranchuk.moderrorchecker</li>
-    <li>arquebus.morepersonatraits</li>
     <li>boundir.newgameplus</li>
-    <li>andromeda.nicehealthtab</li>
-    <li>doug.nojobauthors</li>
     <li>ogre.ogrestack</li>
     <li>mlie.omnicoredrill</li>
     <li>6224y.onewithdeath</li>
     <li>overwatch.mechanoid.septentrionrace</li>
     <li>turnovus.submod.backpacksarenotbelts</li>
-    <li>isorex.pawneditor</li>
     <li>mehni.pickupandhaul</li>
+    <li>memegoddess.giddyup</li>
     <li>meltup.polyamorybeds.vanilla</li>
     <li>arandomkiwi.powerpp</li>
     <li>neptimus7.progressrenderer</li>
     <li>mlie.prostheticdidgets</li>
-    <li>ogliss.thewhitecrayon.quarry</li>
     <li>woolstrand.realruins</li>
     <li>autumndawn.realisticdaylengthtimes</li>
-    <li>regrowth.botr.core</li>
-    <li>mlie.regrowthexpandedworldgeneration</li>
     <li>mlie.remotedoors</li>
     <li>acruid.repairbench</li>
     <li>kage.resourcetrees</li>
@@ -158,12 +169,8 @@
     <li>ceteam.combatextendedarmors</li>
     <li>ceteam.combatextendedattachments</li>
     <li>ceteam.combatextendedmelee</li>
-    <li>ceteam.combatextendedguns</li>
     <li>dubwise.rimefeller</li>
-    <li>jaxe.rimhud</li>
     <li>maux36.rimpsyche</li>
-    <li>arandomkiwi.rimsaves</li>
-    <li>bucko.royalarsenal</li>
     <li>sandy.rpgstyleinventory.avilmask.revamped</li>
     <li>ratys.rtsolarflareshield</li>
     <li>scrubdaddy.hairstyles</li>
@@ -171,9 +178,6 @@
     <li>mlie.showmeyourhands</li>
     <li>mlie.showmodupdates</li>
     <li>pb3n.simpleleadership</li>
-    <li>owlchemist.smartfarming</li>
-    <li>sarg.smartspeed</li>
-    <li>dhultgren.smarterconstruction</li>
     <li>weilbyte.snapout</li>
     <li>krelinos.socialexpfromtrade</li>
     <li>lee.theforce.standalone</li>
@@ -186,78 +190,47 @@
     <li>bomtrain.moresilver</li>
     <li>shunter.uniqueweaponsunbound</li>
     <li>mlie.usethisinstead</li>
-    <li>ushanka.glittertechexpansion</li>
     <li>vanillaexpanded.varme</li>
-    <li>vanillaexpanded.basegeneration</li>
-    <li>vanillaexpanded.vfecore</li>
     <li>ferny.captureexpansion</li>
-    <li>vanillaexpanded.vfearchitect</li>
-    <li>vanillaexpanded.vfeart</li>
     <li>vanillaexpanded.vfefarming</li>
-    <li>vanillaexpanded.vfemedical</li>
     <li>vanillaexpanded.vfepower</li>
     <li>vanillaexpanded.vfeproduction</li>
     <li>vanillaexpanded.vfepropsanddecor</li>
-    <li>vanillaexpanded.vfesecurity</li>
-    <li>vanillaexpanded.vfespacer</li>
-    <li>vanillaexpanded.vpe.hemosage</li>
     <li>vanillaexpanded.vpe.puppeteer</li>
-    <li>vanillaquestsexpanded.ancients</li>
-    <li>vanillaracesexpanded.hussar</li>
-    <li>vanillaracesexpanded.sanguophage</li>
     <li>vanillaexpanded.vanillasocialinteractionsexpanded</li>
     <li>vanillaexpanded.vanillatradingexpanded</li>
     <li>vanillaexpanded.vanillatraitsexpanded</li>
-    <li>oskarpotocki.vanillavehiclesexpanded</li>
-    <li>vanillaexpanded.vwehw</li>
     <li>mlie.visualxmlpatches</li>
     <li>alexispopcorn.vac.base</li>
     <li>lebek.workhistory</li>
     <li>veltaris.mechcrate</li>
-    <li>veltaris.mechtech</li>
-    <li>frozensnowfox.filthvanisheswithrainandtime</li>
-    <li>sobb.advancedmechanoids</li>
     <li>cantaloupe.advancedpolybeds</li>
-    <li>ferny.categoriesspots</li>
-    <li>ilyvion.colonymanagerredux</li>
     <li>aoba.fortress.industrial</li>
     <li>grimworld.core</li>
-    <li>erdelf.humanoidalienraces</li>
     <li>jellycreative.isekaileveling</li>
     <li>keyz182.keyzallowutilities</li>
     <li>andromeda.facialanimation</li>
-    <li>rebuild.cotr.doorsandcorners</li>
     <li>regrowth.botr.aspenforest</li>
-    <li>petetimessix.researchreinvented</li>
     <li>resplice.xotr.charmweavers</li>
     <li>phonicmas.rimdark.mankindsfinest</li>
-    <li>bucko.royalarsenal.specialtyweapons</li>
     <li>kathanon.searchablemenus</li>
     <li>gt.sam.tilledsoil</li>
-    <li>oskarpotocki.vanillavehiclesexpandedtier3</li>
-    <li>com.yayo.yayoani.continued</li>
     <li>cwedin.mechstations</li>
-    <li>breadmo.cinders</li>
     <li>happypurging.ageofdarkness</li>
     <li>grimworld.aspectusimperialis</li>
     <li>grimworld.talonoftheemperor</li>
-    <li>teiwaz.gtgtradercore</li>
     <li>co.uk.epicguru.meleeanimation</li>
     <li>andromeda.niceplantsmenu</li>
     <li>petetimessix.simplesidearms</li>
-    <li>icc.tov.ra</li>
-    <li>vanillaexpanded.skills</li>
     <li>teiwaz.aot</li>
     <li>teiwaz.gtglot</li>
     <li>teiwaz.gtgmct</li>
-    <li>aoba.deadmanswitch.core</li>
     <li>teiwaz.gtgot</li>
     <li>teiwaz.oot</li>
     <li>grimworld.scatteredsons</li>
     <li>verycontinued.bettermechanoidlootlol</li>
-    <li>rh2.metal.gear.solid</li>
     <li>aoba.deadmanswitch.ancientcorps</li>
-    <li>andromeda.nicehands</li>
+    <li>breadmo.cinders</li>
     <li>aoba.deadmanswitch.motorized</li>
     <li>lee.theforce.lightsaber</li>
     <li>aoba.deadmanswitch.synthetic</li>
@@ -267,13 +240,41 @@
     <li>rosalina.mating.press</li>
     <li>whoup.tweakingthey.balancern</li>
     <li>vanillaexpanded.vtexe</li>
-    <li>feb.medicineretexture</li>
-    <li>sugarcube.puahsharedstorage</li>
     <li>jdubarb.spaceservices</li>
-    <li>dubwise.dubsperformanceanalyzer.steam</li>
-    <li>7h0m4s.rimworldreadablenumbers</li>
     <li>local.errorfixes</li>
+    <li>proxyer.steamgeyserbuilding</li>
+    <li>hawkwood.floorsarealmostworthless</li>
+    <li>gideon.stackablechunks</li>
+    <li>samael.npcmechsandanimals</li>
+    <li>japester.upscaledtextures.4x</li>
+    <li>botchjob.gallatrossandfriendsretextured</li>
+    <li>frozensnowfox.filthvanisheswithrainandtime</li>
+    <li>ferny.categoriesspots</li>
+    <li>icc.tov.ra</li>
+    <li>andromeda.nicehands</li>
+    <li>feb.medicineretexture</li>
+    <li>savestoragesettings.kv.rw.fishtmp</li>
+    <li>skyl3lazer.apparelpolicybuilder</li>
+    <li>crashm.colorcodedmoodbar.11</li>
+    <li>dubwise.dubsmintmenus</li>
+    <li>jaxe.bubbles</li>
+    <li>andromeda.nicehealthtab</li>
+    <li>isorex.pawneditor</li>
+    <li>mlie.regrowthexpandedworldgeneration</li>
+    <li>arandomkiwi.rimsaves</li>
+    <li>sarg.smartspeed</li>
+    <li>ilyvion.colonymanagerredux</li>
+    <li>7h0m4s.rimworldreadablenumbers</li>
+    <li>mlie.askbeforeenter</li>
+    <li>mlie.combatreadinesscheck</li>
+    <li>mlie.haulminedchunks</li>
+    <li>doug.nojobauthors</li>
+    <li>owlchemist.smartfarming</li>
+    <li>dhultgren.smarterconstruction</li>
+    <li>com.yayo.yayoani.continued</li>
+    <li>sugarcube.puahsharedstorage</li>
     <li>local.csharpfixes</li>
+    <li>dubwise.dubsperformanceanalyzer.steam</li>
   </activeMods>
   <knownExpansions>
     <li>ludeon.rimworld.royalty</li>
