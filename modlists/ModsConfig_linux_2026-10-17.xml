@@ -1,9 +1,9 @@
 <?xml version="1.0" ?>
 <ModsConfigData>
-  <version>1.7.4980 rev60</version>
+  <version>1.7.4981 rev136</version>
   <activeMods>
-    <li>brrainz.visualexceptions</li>
     <li>brrainz.harmony</li>
+    <li>brrainz.visualexceptions</li>
     <li>taranchuk.fastergameloading</li>
     <li>ludeon.rimworld</li>
     <li>ludeon.rimworld.royalty</li>
@@ -27,6 +27,8 @@
     <li>vanillaexpanded.vcef</li>
     <li>vanillaexpanded.vpsycastse</li>
     <li>vanillaracesexpanded.android</li>
+    <li>proxyer.steamgeyserbuilding</li>
+    <li>forti.rimmarket</li>
     <li>kazepsi.irbm</li>
     <li>sarg.alphamemes</li>
     <li>atmnou.exomech</li>
@@ -153,6 +155,10 @@
     <li>resplice.xotr.core</li>
     <li>cabbage.rimcities</li>
     <li>phonicmas.rimdark.frameworkcore</li>
+    <li>ceteam.combatextendedarmors</li>
+    <li>ceteam.combatextendedattachments</li>
+    <li>ceteam.combatextendedmelee</li>
+    <li>ceteam.combatextendedguns</li>
     <li>dubwise.rimefeller</li>
     <li>jaxe.rimhud</li>
     <li>maux36.rimpsyche</li>
@@ -173,7 +179,6 @@
     <li>lee.theforce.standalone</li>
     <li>cat.stellicarsenal</li>
     <li>rabiosus.takecover</li>
-    <li>aoba.deadmanswitch.core</li>
     <li>jelly.theharvest</li>
     <li>smashphil.dropspot</li>
     <li>automatic.traderships</li>
@@ -228,9 +233,6 @@
     <li>phonicmas.rimdark.mankindsfinest</li>
     <li>bucko.royalarsenal.specialtyweapons</li>
     <li>kathanon.searchablemenus</li>
-    <li>aoba.deadmanswitch.ancientcorps</li>
-    <li>aoba.deadmanswitch.motorized</li>
-    <li>aoba.deadmanswitch.synthetic</li>
     <li>gt.sam.tilledsoil</li>
     <li>oskarpotocki.vanillavehiclesexpandedtier3</li>
     <li>com.yayo.yayoani.continued</li>
@@ -248,13 +250,17 @@
     <li>teiwaz.aot</li>
     <li>teiwaz.gtglot</li>
     <li>teiwaz.gtgmct</li>
+    <li>aoba.deadmanswitch.core</li>
     <li>teiwaz.gtgot</li>
     <li>teiwaz.oot</li>
     <li>grimworld.scatteredsons</li>
     <li>verycontinued.bettermechanoidlootlol</li>
     <li>rh2.metal.gear.solid</li>
+    <li>aoba.deadmanswitch.ancientcorps</li>
     <li>andromeda.nicehands</li>
+    <li>aoba.deadmanswitch.motorized</li>
     <li>lee.theforce.lightsaber</li>
+    <li>aoba.deadmanswitch.synthetic</li>
     <li>aoba.deadmanswitch.mobiledragoon</li>
     <li>dms.tritech</li>
     <li>rosalina.cuddly.throatpie</li>
