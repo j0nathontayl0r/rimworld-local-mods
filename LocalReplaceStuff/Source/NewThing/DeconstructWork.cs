@@ -1,0 +1,34 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Verse;
+using RimWorld;
+using HarmonyLib;
+
+namespace Replace_Stuff.NewThing
+{
+	[HarmonyPatch(typeof(Frame), "WorkToBuild", MethodType.Getter)]
+	public static class NewThingDeconstructWork
+	{
+		//public float WorkToBuild
+		public static void Postfix(Frame __instance, ref float __result)
+		{
+			// LOCAL PORT (Hexnet111 performance fork): Virtualize_WorkToBuild already gives a ReplaceFrame its work.
+			if (__instance is ReplaceFrame)
+				return; //ReplaceFrame already has its WorkToBuild set to the correct methods.
+
+			if (__instance.IsNewThingReplacement(out Thing oldThing))
+				__result += ReplaceFrame.WorkToDeconstructDef(oldThing.def, oldThing.Stuff);
+		}
+	}
+	[HarmonyPatch(typeof(Blueprint_Build), "WorkTotal", MethodType.Getter)]
+	public static class NewThingDeconstructWork_Blueprint
+	{
+		public static void Postfix(Blueprint_Build __instance, ref float __result)
+		{
+			if (__instance.IsNewThingReplacement(out Thing oldThing))
+				__result += ReplaceFrame.WorkToDeconstructDef(oldThing.def, oldThing.Stuff);
+		}
+	}
+}

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<loadFolders>
+  <!-- LOCAL 1.7 PORT: replaces upstream's 1.1-1.7 lists. 1.7 only: loads / and 1.7. The 1.7 folder
+       also holds the one file that only a 1.1-1.6 folder supplied. RimWorld skips XML comments here. -->
+  <v1.7>
+    <li>/</li>
+    <li>1.7</li>
+  </v1.7>
+</loadFolders>

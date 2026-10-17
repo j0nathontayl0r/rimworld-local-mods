@@ -136,7 +136,7 @@ if [ -d "$MODS_DIR" ]; then
         # lists only reparse points (junctions and symlinks) in the folder.
         LINKS="$(cmd.exe //c dir //AL //B "$(cygpath -w "$MODS_DIR")" 2>/dev/null | tr -d '\r')"
     fi
-    for m in LocalPatches LocalCSharpFixes LocalEarlyFixes LocalVisualExceptions; do
+    for m in LocalPatches LocalCSharpFixes LocalEarlyFixes LocalVisualExceptions LocalReplaceStuff; do
         if [ "$OS" = windows ]; then
             fix="cmd //c mklink /J \"$(cygpath -w "$MODS_DIR/$m")\" \"$(cygpath -w "$REPO/$m")\""
             printf '%s\n' "$LINKS" | grep -qxF "$m"; linked=$?

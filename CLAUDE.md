@@ -17,8 +17,11 @@ holds the old email); reset it to `origin/main` instead. One fix per commit; pus
 - 1.7 runs on the Waylith engine on .NET 10 (CoreCLR, not Mono). The binary is plain `RimWorld`
   (`RimWorld.exe` on Windows), not `RimWorldLinux` / `RimWorldWin64`.
 - The Linux install is 1.7-only, with no `RimWorldLinux_Data/Managed`, so the net472 (1.6)
-  projects can't build there. Build the `Source/v1.7/*.csproj` projects, which write
-  `1.7/Assemblies/`. Each C# mod's `LoadFolders.xml` loads exactly one DLL per game version.
+  projects can't build there. Build the 1.7 projects, which write `1.7/Assemblies/`:
+  `Source/v1.7/*.csproj` in a mod that also has a 1.6 build, `Source/*.csproj` in the 1.7-only
+  mods (`LocalVisualExceptions`, `LocalReplaceStuff`). Each C# mod loads exactly one DLL per game
+  version: through its `LoadFolders.xml`, or through RimWorld's default `/` + `1.7/` folders where
+  it has none (`LocalVisualExceptions`).
 - Harmony on 1.7 is 3.x and checks patch parameter types. Patches whose types were wrong but
   tolerated by Harmony 2 now throw, and one bad class aborts a mod's whole `PatchAll`.
 - `Thread.Abort()` throws `PlatformNotSupportedException` on .NET 10 (Prepatcher dies of it; ReGrowth
@@ -46,7 +49,17 @@ holds the old email); reset it to `origin/main` instead. One fix per commit; pus
 - `LocalVisualExceptions` shares its packageId with workshop 2538411704. Two copies in `Mods/` with
   the same packageId make RimWorld pick one at random, so remove stray SteamCMD/RimSort downloads
   of it from `Mods/`.
+- `LocalReplaceStuff` uses its own packageId `jdtay.replacestuff` and declares
+  `Memegoddess.ReplaceStuff` and `Uuugggg.ReplaceStuff` incompatible. Activate exactly one Replace
+  Stuff mod.
+- Mark every change to the workshop base in `LocalReplaceStuff`: `LOCAL PORT (Hexnet111 performance
+  fork)` on a ported fork hunk, `LOCAL 1.7 PORT` on every other local change. Its `LICENSE` keeps
+  every original copyright notice: add a notice, never remove one.
 - `scripts/sync-and-play.sh` is the single launcher for both OSes (Git Bash on Windows); there is
   no PowerShell version any more.
 - After changing the active mod list, run `./scripts/export-modlist.py` and commit the new
   `modlists/` snapshot.
+- After any change to the active mod list, scan the active mods again for compatibility patches
+  keyed on `Memegoddess.ReplaceStuff` or `Uuugggg.ReplaceStuff`. Search text files
+  case-insensitively and DLLs in UTF-8 and UTF-16LE. Update the table in the `LocalReplaceStuff`
+  section of README.md.
