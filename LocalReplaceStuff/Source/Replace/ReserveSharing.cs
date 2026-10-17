@@ -28,10 +28,23 @@ namespace Replace_Stuff.Replace
 				{
 					if (method.IsGenericMethod)
 						harmony.Patch(method.MakeGenericMethod(new Type[] { typeof(JobDriver_TakeToBed) }), prefix, null);//JobDriver_TakeToBed seems to be the only one used;todo: foreach jobdriver subset
+					else if (method.Name == nameof(ReservationManager.Reserve))
+						harmony.Patch(method, new HarmonyMethod(typeof(ReserveSharing), nameof(ReserveSharing.ReservePrefix)), null);
 					else
 						harmony.Patch(method, prefix, null);
 				}
 			}
+		}
+
+		// LOCAL 1.7 PORT: a replacement frame's reservation goes to the old thing, which another pawn can hold
+		// for a different job (e.g. refuelling a torch lamp that is being replaced). Vanilla then logs
+		// "Could not reserve", but the job continues. Don't log an error for a redirected reservation.
+		public static void ReservePrefix(ref LocalTargetInfo target, ref bool errorOnFailed)
+		{
+			LocalTargetInfo original = target;
+			Prefix(ref target);
+			if (target != original)
+				errorOnFailed = false;
 		}
 
 		//public bool CanReserve(Pawn claimant, LocalTargetInfo target, int maxPawns = 1, int stackCount = -1, ReservationLayerDef layer = null, bool ignoreOtherReservations = false)

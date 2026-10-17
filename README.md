@@ -134,6 +134,11 @@ memory only, because thing IDs do not repeat inside one game.
   `CanPlaceBlueprintAt` only calls `_NewTemp`, and `_NewTemp` tests `Rotation != rot`
   (`op_Inequality`, not `op_Equality`). Effect: for doors and things that do not rotate, a thing at
   a different rotation counts in the "identical thing or blueprint exists" test.
+- `Source/Replace/ReserveSharing.cs`: `ReservationManager.Reserve` gets its own prefix. It redirects
+  the target as before, and sets `errorOnFailed = false` when it redirects. A replacement frame's
+  reservation goes to the old thing, and another pawn can hold that thing for a different job (for
+  example, refuelling a torch lamp that an electric lamp replaces). Upstream then logs "Could not
+  reserve", but the job continues. Every reservation that is not redirected keeps its error.
 
 The workshop 1.7 DLL (sha256 `fb130724…`) has neither transpiler fix. There, both transpilers find
 no match, change nothing and write nothing to the log. The fork table above gives the fork hunks
