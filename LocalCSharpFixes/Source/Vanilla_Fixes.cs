@@ -154,6 +154,27 @@ namespace LocalCSharpFixes
         }
     }
 
+    // Vanilla: Corpse.IngestibleNow requires RotStage.Fresh, and JobDriver_Ingest fails the job on
+    // the tick that turns false. A pawn that finishes chewing on that same tick starts FinalizeIngest
+    // before the fail check, so Thing.Ingested logs "ingested IngestibleNow=false thing" and returns
+    // 0 nutrition (observed 2026-10-17: two wild Dinopithecus sharing a Blood Shrimp corpse). For a
+    // flesh corpse whose only problem is rot, return the same 0 without the log. Destroyed, bugged,
+    // burning, non-ingestible and non-flesh corpses keep vanilla's error.
+    // Signature verified against the installed 1.7 DLL:
+    //   float Verse.Thing.Ingested(Pawn ingester, float nutritionWanted)
+    [HarmonyPatch(typeof(Thing), nameof(Thing.Ingested))]
+    internal static class Thing_Ingested_RottenCorpseQuiet
+    {
+        private static bool Prefix(Thing __instance, ref float __result)
+        {
+            if (!(__instance is Corpse corpse) || corpse.Destroyed || corpse.Bugged || corpse.IsBurning() || !corpse.def.IsIngestible
+                || !corpse.InnerPawn.RaceProps.IsFlesh || corpse.GetRotStage() == RotStage.Fresh)
+                return true;
+            __result = 0f;
+            return false;
+        }
+    }
+
     // Vanilla: JobGiver_AIDefendEscortee.GetDefendee casts duty.focus to Thing. A caravan animal
     // can transiently hold an escort-family duty whose focus is a bare cell (observed 2026-08-26:
     // Giddy-Up mount Doedicurus in a trade caravan, focus near the chill spot -- Giddy-Up's own
