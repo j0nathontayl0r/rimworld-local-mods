@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using HarmonyLib;
 using RimWorld;
 using Verse;
@@ -19,9 +20,40 @@ namespace LocalCSharpFixes
     //   SmallExtensions.CanUseNow(bench): Spawned && (no CompPowerTrader || PowerOn)
     //        && (no CompForbiddable || !Forbidden) && Faction == Faction.OfPlayer
     // (Forbidden is already covered by the workgiver's own IsForbidden check.)
+    //
+    // Second fix: SurgeryOutcomeComp_MedicineQuality_Patches.Recipe_Surgery_CheckSurgeryFail_Prefix
+    // (a prefix on SurgeryOutcomeComp_MedicineQuality.XGetter) grants medicine research from the
+    // bill's consumed medicine, else loops over `ingredients` with no null check. Nice Health Tab
+    // previews surgery chances by calling AffectQuality with ingredients = null, and bill = null when
+    // no medicine applies, so the loop throws a NullReferenceException each time the Health tab draws.
+    // When the preview does pass a medicine, the prefix grants research for a surgery that never
+    // happens. Vanilla CheckSurgeryFail always passes the real ingredient list, so skip RR's prefix
+    // only when ingredients is null.
     public static class ResearchReinventedFixes
     {
         public static void Apply(Harmony h)
+        {
+            ApplyBenchFix(h);
+            try
+            {
+                var s = AccessTools.TypeByName("PeteTimesSix.ResearchReinvented.HarmonyPatches.Medicine.SurgeryOutcomeComp_MedicineQuality_Patches");
+                var sm = s == null ? null : AccessTools.Method(s, "Recipe_Surgery_CheckSurgeryFail_Prefix");
+                if (sm == null)
+                {
+                    Log.Message("[LocalCSharpFixes] skip Research Reinvented surgery preview fix (target not present)");
+                    return;
+                }
+                h.Patch(sm, prefix: new HarmonyMethod(typeof(ResearchReinventedFixes), nameof(SurgeryPreview_Prefix)));
+            }
+            catch (Exception e)
+            {
+                Log.Warning($"[LocalCSharpFixes] Research Reinvented surgery preview fix failed: {e.Message}");
+            }
+        }
+
+        public static bool SurgeryPreview_Prefix(List<Thing> ingredients) => ingredients != null;
+
+        private static void ApplyBenchFix(Harmony h)
         {
             var t = AccessTools.TypeByName("PeteTimesSix.ResearchReinvented.Rimworld.WorkGivers.WorkGiver_ResearcherRR");
             if (t == null)
