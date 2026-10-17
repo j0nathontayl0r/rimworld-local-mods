@@ -59,6 +59,8 @@ namespace LocalCSharpFixes
                       nameof(ThirdPartyPatches.CE_TendSelfJob_Postfix));
             TryPrefix(h, "ImprovedWorkbenches.ExtendedBillData_ExposeData", "Postfix",
                       nameof(ThirdPartyPatches.BWM_ExtendedBillExposeData_Prefix));
+            TryPrefix(h, "CaptureExpansion.PawnRenderTree_AdjustParms_Patch", "Postfix",
+                      nameof(ThirdPartyPatches.CaptureExpansion_AdjustParms_Prefix));
 
             GrimWorld40kFixes.Apply(h);
             VACLogSpamFixes.Apply(h);

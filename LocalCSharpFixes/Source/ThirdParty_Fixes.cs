@@ -267,5 +267,14 @@ namespace LocalCSharpFixes
         // so skip the postfix when no world exists. Dubs reads its settings in an
         // ExecuteWhenFinished that runs after our static constructor, so this lands in time.
         public static bool BWM_ExtendedBillExposeData_Prefix() => Current.Game?.World != null;
+
+        // Capture Expansion: PawnRenderTree_AdjustParms_Patch.Postfix(ref PawnDrawParms parms)
+        // reads parms.pawn.ParentHolder without a null check. Melee Animation re-runs the render
+        // tree for duel animations with parms that hold no pawn, so the postfix threw a
+        // NullReferenceException every frame of every duel (1179x "Rendering exception when doing
+        // animation Duel", observed 2026-10-17) and Melee Animation dropped those frames. The
+        // postfix only flips the head of a pawn on a restraint platform, so with no pawn it has
+        // nothing to do. Exosuit's postfix on the same method already checks parms.pawn != null.
+        public static bool CaptureExpansion_AdjustParms_Prefix(ref PawnDrawParms parms) => parms.pawn != null;
     }
 }
