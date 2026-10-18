@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Fix26: The Dead Man's Switch (3819799478, Aoba.DeadManSwitch.Core) gives no CE bodyShape to
+       two humanoid mech families. Its 1.7/CE patch for BaseAutomatroidHumanRace is commented out.
+       The Soldats (Soldat, Grenadier, Kanonier, Sergeant) have no other patch. The Arquebusier
+       patch (Automatroid_Medium_Arquebusier_CE.xml) adds the extension to the PawnKindDefs, where
+       CE never reads it. CE then logs "CE returning BodyType Undefined for pawn DMS_Mech_Soldat..."
+       (ErrorOnce per pawn) when a projectile checks collision, and uses fallback body factors.
+       Add Humanoid to the two abstract bases, as DMS does for BaseBattleFrame. The children
+       inherit it. Added only if the base has no CE race extension, so an upstream fix wins. -->
+  <Operation Class="PatchOperationFindMod">
+    <success>Always</success>
+    <mods>
+      <li>Combat Extended</li>
+    </mods>
+    <match Class="PatchOperationSequence">
+      <success>Always</success>
+      <operations>
+        <li Class="PatchOperationConditional">
+          <success>Always</success>
+          <xpath>Defs/ThingDef[@Name="BaseMechRace_Soldat"]/modExtensions/li[@Class="CombatExtended.RacePropertiesExtensionCE"]</xpath>
+          <nomatch Class="PatchOperationAddModExtension">
+            <success>Always</success>
+            <xpath>Defs/ThingDef[@Name="BaseMechRace_Soldat"]</xpath>
+            <value>
+              <li Class="CombatExtended.RacePropertiesExtensionCE">
+                <bodyShape>Humanoid</bodyShape>
+              </li>
+            </value>
+          </nomatch>
+        </li>
+        <li Class="PatchOperationConditional">
+          <success>Always</success>
+          <xpath>Defs/ThingDef[@Name="BaseMechRace_Arquebusier"]/modExtensions/li[@Class="CombatExtended.RacePropertiesExtensionCE"]</xpath>
+          <nomatch Class="PatchOperationAddModExtension">
+            <success>Always</success>
+            <xpath>Defs/ThingDef[@Name="BaseMechRace_Arquebusier"]</xpath>
+            <value>
+              <li Class="CombatExtended.RacePropertiesExtensionCE">
+                <bodyShape>Humanoid</bodyShape>
+              </li>
+            </value>
+          </nomatch>
+        </li>
+      </operations>
+    </match>
+  </Operation>
+</Patch>
