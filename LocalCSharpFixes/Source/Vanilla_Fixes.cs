@@ -154,6 +154,85 @@ namespace LocalCSharpFixes
         }
     }
 
+    // Vanilla: QuestPart_SendShuttleAwayOnCleanup calls SendShuttleAwayQuestPartUtility.SendAway on
+    // quest cleanup. For a shuttle with no ship it makes a TransportShip with Unload/FlyAway jobs. If
+    // the shuttle never arrived (unspawned, no holder), that ship never starts and stays in
+    // TransportShipManager forever, deep-saving the shuttle. A quest part that also deep-saves the
+    // shuttle then writes it twice (observed 2026-10-17: DMS QuestPart_SpawnCourtShuttle in an expired
+    // Court-Martial quest; "Cannot register ... DMS_Shuttle412785 ... Id already used" on load and
+    // "already deepsaved" on save). A shuttle that never arrived has nothing to send away: skip it.
+    // Signature verified against the installed 1.7 DLL:
+    //   static void RimWorld.SendShuttleAwayQuestPartUtility.SendAway(Thing shuttle, bool dropEverything)
+    [HarmonyPatch(typeof(SendShuttleAwayQuestPartUtility), nameof(SendShuttleAwayQuestPartUtility.SendAway))]
+    internal static class SendShuttleAway_NeverArrivedGuard
+    {
+        private static bool Prefix(Thing shuttle)
+            => shuttle == null || !NeverArrived(shuttle) || shuttle.TryGetComp<CompShuttle>()?.shipParent != null;
+
+        internal static bool NeverArrived(Thing t) => !t.SpawnedOrAnyParentSpawned && t.ParentHolder == null;
+    }
+
+    // Removes the orphan ships that the bug above left in existing saves: not started, no current job,
+    // only Unload/FlyAway jobs queued, and a shuttle that never arrived. Deregister only, never
+    // Dispose: Dispose destroys the shuttle, which a quest part may still hold. Also clear CompShuttle
+    // .shipParent on the shuttle copies that point at the removed ship, so the next load has no
+    // unresolved reference. The load that runs this still logs the duplicate once (cross-refs resolve
+    // before FinalizeInit); the next save writes the shuttle only once.
+    [HarmonyPatch(typeof(Game), nameof(Game.FinalizeInit))]
+    internal static class Game_FinalizeInit_RemoveOrphanShuttleShips
+    {
+        private static readonly AccessTools.FieldRef<TransportShip, List<ShipJob>> shipJobsRef =
+            AccessTools.FieldRefAccess<TransportShip, List<ShipJob>>("shipJobs");
+
+        private static void Postfix()
+        {
+            try
+            {
+                var manager = Find.TransportShipManager;
+                var ships = manager?.AllTransportShips;
+                if (ships == null) return;
+                for (int i = ships.Count - 1; i >= 0; i--)
+                {
+                    var ship = ships[i];
+                    if (!IsOrphan(ship)) continue;
+                    manager.DeregisterShipObject(ship);
+                    ClearShipParent(ship.shipThing, ship);
+                    foreach (var quest in Find.QuestManager.QuestsListForReading)
+                        foreach (var part in quest.PartsListForReading)
+                            if (AccessTools.Field(part.GetType(), "shuttle")?.GetValue(part) is Thing t)
+                                ClearShipParent(t, ship);
+                    Log.Message($"[LocalCSharpFixes] removed orphan transport ship {ship.GetUniqueLoadID()} (its shuttle {ship.shipThing} never arrived).");
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warning($"[LocalCSharpFixes] orphan transport ship cleanup failed: {e.Message}");
+            }
+        }
+
+        private static bool IsOrphan(TransportShip ship)
+        {
+            if (ship == null || ship.started || ship.Disposed || ship.curJob != null || ship.shipThing == null)
+                return false;
+            if (!SendShuttleAway_NeverArrivedGuard.NeverArrived(ship.shipThing))
+                return false;
+            var jobs = shipJobsRef(ship);
+            if (jobs == null || jobs.Count == 0)
+                return false;
+            foreach (var job in jobs)
+                if (job?.def != ShipJobDefOf.Unload && job?.def != ShipJobDefOf.FlyAway)
+                    return false;
+            return true;
+        }
+
+        private static void ClearShipParent(Thing shuttle, TransportShip ship)
+        {
+            var comp = shuttle?.TryGetComp<CompShuttle>();
+            if (comp != null && comp.shipParent == ship)
+                comp.shipParent = null;
+        }
+    }
+
     // Vanilla: Corpse.IngestibleNow requires RotStage.Fresh, and JobDriver_Ingest fails the job on
     // the tick that turns false. A pawn that finishes chewing on that same tick starts FinalizeIngest
     // before the fail check, so Thing.Ingested logs "ingested IngestibleNow=false thing" and returns
