@@ -74,6 +74,7 @@ namespace LocalCSharpFixes
             IsekaiLevelingFixes.Apply(h);
             VEFHeavyWeaponFixes.Apply(h);
             ReGrowthWorldGenFixes.Apply(h);
+            ReGrowthCoreFixes.Apply(h);
             VFEEmpireFixes.Apply(h);
             BreastfeedCarryToMomFixes.Apply(h);
             RimefellerFixes.Apply(h);
