@@ -139,6 +139,11 @@ memory only, because thing IDs do not repeat inside one game.
   reservation goes to the old thing, and another pawn can hold that thing for a different job (for
   example, refuelling a torch lamp that an electric lamp replaces). Upstream then logs "Could not
   reserve", but the job continues. Every reservation that is not redirected keeps its error.
+- `Source/PlaceBridges/BridgelikeTerrain.cs`: a terrain without a `blueprintDef` is not a bridge
+  candidate. Odyssey's ancient heavy bridge has no `designationCategory`, so it has no blueprint.
+  It also has no cost, so `FindBridgeFor` chose it as a free bridge. Then
+  `PlaceBlueprintForBuild` threw a `NullReferenceException` in `ThingMaker.MakeThing` when the
+  player placed a building that needed a bridge.
 
 The workshop 1.7 DLL (sha256 `fb130724…`) has neither transpiler fix. There, both transpilers find
 no match, change nothing and write nothing to the log. The fork table above gives the fork hunks

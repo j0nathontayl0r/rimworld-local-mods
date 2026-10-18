@@ -53,6 +53,11 @@ namespace Replace_Stuff.PlaceBridges
 
 				if (!terdef.Removable) continue;//If you can't remove it, it's a permanent change, let's not do that automatically
 
+				// LOCAL 1.7 PORT: a terrain without a blueprint (e.g. Odyssey's ancient heavy bridge, no
+				// designationCategory) can't be placed. It has no cost, so FindBridgeFor picked it as a free
+				// bridge and PlaceBlueprintForBuild threw a NullReferenceException in ThingMaker.MakeThing.
+				if (terdef.blueprintDef == null) continue;
+
 				foreach (TerrainAffordanceDef provideAff in terdef.affordances)
 				{
 					if (provideAff == bridgeAff) continue;  //Already can do, not an upgrade
