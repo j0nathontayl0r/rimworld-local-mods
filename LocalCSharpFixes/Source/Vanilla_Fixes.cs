@@ -233,6 +233,85 @@ namespace LocalCSharpFixes
         }
     }
 
+    // Vanilla: WorkGiver_ConstructSmoothWall scans designated CELLS (WorkGiverDef ConstructSmoothWalls:
+    // scanCells true, scanThings false). JobGiver_Work then checks pawn.CanReach(cell, Touch), and for a
+    // bare cell TouchPathEndModeUtility never allows a diagonal touch past two walls. So a rough rock
+    // wall in a room's inside corner, which touches the room only diagonally, is "unreachable" and
+    // never gets smoothed. Mining scans the wall THING, and IsCornerTouchAllowed_NewTemp lets a
+    // roof-holding edifice be touched diagonally, so the same corner can be mined. The SmoothWall job
+    // already targets the wall thing and paths to it with the thing. Fix: make the work giver scan the
+    // wall at each SmoothWall designation instead of the cell, and hand HasJobOnThing/JobOnThing to
+    // vanilla's own cell methods so every check stays vanilla's. A designation whose cell has no
+    // edifice is skipped (vanilla's cell scan would log ErrorOnce and remove it).
+    // Signatures verified against the installed 1.7 DLL:
+    //   virtual IEnumerable<Thing> WorkGiver_Scanner.PotentialWorkThingsGlobal(Pawn pawn)
+    //   virtual bool WorkGiver_Scanner.HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
+    //   virtual Job WorkGiver_Scanner.JobOnThing(Pawn pawn, Thing t, bool forced = false)
+    //   (WorkGiver_ConstructSmoothWall overrides none of these three)
+    public static class SmoothWallCornerFix
+    {
+        public static void Apply(Harmony h)
+        {
+            try
+            {
+                var def = DefDatabase<WorkGiverDef>.GetNamedSilentFail("ConstructSmoothWalls");
+                if (def == null || def.giverClass != typeof(WorkGiver_ConstructSmoothWall))
+                {
+                    Log.Message("[LocalCSharpFixes] skip smooth-wall corner fix (ConstructSmoothWalls missing or changed)");
+                    return;
+                }
+                var t = typeof(WorkGiver_Scanner);
+                h.Patch(AccessTools.Method(t, nameof(WorkGiver_Scanner.PotentialWorkThingsGlobal)),
+                        prefix: new HarmonyMethod(typeof(SmoothWallCornerFix), nameof(PotentialWorkThingsGlobal_Prefix)));
+                h.Patch(AccessTools.Method(t, nameof(WorkGiver_Scanner.HasJobOnThing)),
+                        prefix: new HarmonyMethod(typeof(SmoothWallCornerFix), nameof(HasJobOnThing_Prefix)));
+                h.Patch(AccessTools.Method(t, nameof(WorkGiver_Scanner.JobOnThing)),
+                        prefix: new HarmonyMethod(typeof(SmoothWallCornerFix), nameof(JobOnThing_Prefix)));
+                // Flip the scan mode only after all three patches are in place.
+                def.scanThings = true;
+                def.scanCells = false;
+            }
+            catch (Exception e)
+            {
+                Log.Warning($"[LocalCSharpFixes] smooth-wall corner fix failed: {e.Message}");
+            }
+        }
+
+        public static bool PotentialWorkThingsGlobal_Prefix(WorkGiver_Scanner __instance, Pawn pawn, ref IEnumerable<Thing> __result)
+        {
+            if (!(__instance is WorkGiver_ConstructSmoothWall))
+                return true;
+            __result = DesignatedWalls(pawn.Map);
+            return false;
+        }
+
+        public static bool HasJobOnThing_Prefix(WorkGiver_Scanner __instance, Pawn pawn, Thing t, bool forced, ref bool __result)
+        {
+            if (!(__instance is WorkGiver_ConstructSmoothWall))
+                return true;
+            __result = t != null && __instance.HasJobOnCell(pawn, t.Position, forced);
+            return false;
+        }
+
+        public static bool JobOnThing_Prefix(WorkGiver_Scanner __instance, Pawn pawn, Thing t, bool forced, ref Job __result)
+        {
+            if (!(__instance is WorkGiver_ConstructSmoothWall))
+                return true;
+            __result = t == null ? null : __instance.JobOnCell(pawn, t.Position, forced);
+            return false;
+        }
+
+        private static IEnumerable<Thing> DesignatedWalls(Map map)
+        {
+            foreach (Designation des in map.designationManager.SpawnedDesignationsOfDef(DesignationDefOf.SmoothWall))
+            {
+                Building edifice = des.target.Cell.GetEdifice(map);
+                if (edifice != null)
+                    yield return edifice;
+            }
+        }
+    }
+
     // Vanilla: Corpse.IngestibleNow requires RotStage.Fresh, and JobDriver_Ingest fails the job on
     // the tick that turns false. A pawn that finishes chewing on that same tick starts FinalizeIngest
     // before the fail check, so Thing.Ingested logs "ingested IngestibleNow=false thing" and returns

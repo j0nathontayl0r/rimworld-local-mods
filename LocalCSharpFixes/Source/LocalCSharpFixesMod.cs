@@ -80,6 +80,7 @@ namespace LocalCSharpFixes
             RimefellerFixes.Apply(h);
             ExoMechFixes.Apply(h);
             Vanilla17Fixes.Apply(h);
+            SmoothWallCornerFix.Apply(h);
 
             Log.Message("[LocalCSharpFixes] Harmony patches applied.");
         }
