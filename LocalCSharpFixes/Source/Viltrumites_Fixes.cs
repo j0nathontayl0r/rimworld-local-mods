@@ -18,10 +18,17 @@ namespace LocalCSharpFixes
     // 1. Skip ApplyImperialIdeology and the main-thread icon when the ideo is not the Viltrumites'
     //    own: classic mode, or another faction holds the same ideo.
     // 2. On load in classic mode, restore an ideo that still carries the Viltrumite name or
-    //    adjective once: remove the non-classic precepts of the issues the mod replaced, add back
-    //    the missing classic precepts of those issues and the specialist roles, unlock and rename
-    //    the roles, and reset the name (culture label, as IdeoGenerator.GenerateClassicIdeo does),
-    //    texts, deities and icon. The old name is not saved anywhere, so it can't come back.
+    //    adjective, or that still holds what the rewrite left behind (a non-classic role, a
+    //    non-classic precept of a replaced issue, two precepts of one def, an "ERR" role name):
+    //    remove the non-classic precepts of the replaced issues and the non-classic roles (with
+    //    replacing: true, because otherwise RemovePrecept adds a random default precept back),
+    //    remove duplicates, add back the missing classic precepts of those issues, clear the
+    //    deities and give a locked or broken role its label back. A classic ideo has no memes, so
+    //    role names and deities can't be generated (the grammar gives "ERR", GenerateDeities
+    //    throws). Only for the name match, also reset the name (culture label, as
+    //    IdeoGenerator.GenerateClassicIdeo does), texts and icon. The old name is not saved
+    //    anywhere, so it can't come back. A first version renamed the roles and generated deities;
+    //    it left "ERR: Viltrumite" on the Moralist role (observed 2026-10-19), which this repairs.
     // Signatures verified against the shipped source (1.6/Source/ViltrumiteEmpireIdeologyPatch.cs):
     //   public static void ViltrumiteEmpireIdeologyHelper.ApplyImperialIdeology(Ideo, FactionDef)
     //   private static void ViltrumiteEmpireIdeologyMainThreadPatch.ApplyMainThreadIcon(Ideo)
@@ -35,7 +42,10 @@ namespace LocalCSharpFixes
             "VME_Leader", "VME_Death", "VME_Scars",
         };
 
-        private static readonly string[] RemovedRoles = { "IdeoRole_ShootingSpecialist", "IdeoRole_MeleeSpecialist" };
+        private static readonly AccessTools.FieldRef<IdeoFoundation_Deity, List<IdeoFoundation_Deity.Deity>> deities =
+            AccessTools.FieldRefAccess<IdeoFoundation_Deity, List<IdeoFoundation_Deity.Deity>>("deities");
+        private static readonly AccessTools.FieldRef<Precept, string> preceptName = AccessTools.FieldRefAccess<Precept, string>("name");
+        private static readonly AccessTools.FieldRef<Precept, string> labelCapCache = AccessTools.FieldRefAccess<Precept, string>("labelCapCache");
 
         public static void Apply(Harmony h)
         {
@@ -88,10 +98,12 @@ namespace LocalCSharpFixes
                     return;
                 string name = "ViltrumiteIdeo.Name".TryTranslate(out var n) ? n.ToString() : null;
                 string adjective = "ViltrumiteIdeo.Adjective".TryTranslate(out var a) ? a.ToString() : null;
+                var issues = new HashSet<string>(ReplacedIssues);
                 foreach (Ideo ideo in manager.IdeosListForReading)
                 {
-                    if ((name != null && ideo.name == name) || (adjective != null && ideo.adjective == adjective))
-                        Restore(ideo);
+                    bool rewritten = (name != null && ideo.name == name) || (adjective != null && ideo.adjective == adjective);
+                    if (rewritten || NeedsRepair(ideo, issues))
+                        Restore(ideo, issues, rewritten);
                 }
             }
             catch (Exception e)
@@ -100,45 +112,76 @@ namespace LocalCSharpFixes
             }
         }
 
-        private static void Restore(Ideo ideo)
+        private static bool InReplacedIssue(Precept p, HashSet<string> issues) =>
+            p?.def?.issue != null && issues.Contains(p.def.issue.defName);
+
+        private static bool IsErrName(Precept p) => preceptName(p)?.StartsWith("ERR") == true;
+
+        private static bool NeedsRepair(Ideo ideo, HashSet<string> issues)
+        {
+            var seen = new HashSet<PreceptDef>();
+            foreach (Precept p in ideo.PreceptsListForReading)
+            {
+                if (p?.def == null)
+                    continue;
+                if (p is Precept_Role && (!p.def.classic || IsErrName(p)))
+                    return true;
+                if (InReplacedIssue(p, issues) && (!p.def.classic || !seen.Add(p.def)))
+                    return true;
+            }
+            return false;
+        }
+
+        private static void Restore(Ideo ideo, HashSet<string> issues, bool resetTexts)
         {
             string oldName = ideo.name;
-            var issues = new HashSet<string>(ReplacedIssues);
+            var seen = new HashSet<PreceptDef>();
             foreach (Precept p in ideo.PreceptsListForReading.ToList())
             {
-                if (p?.def != null && !p.def.classic && p.def.issue != null && issues.Contains(p.def.issue.defName))
-                    ideo.RemovePrecept(p);
+                if (p?.def == null)
+                    continue;
+                bool badRole = p is Precept_Role && !p.def.classic;
+                bool badIssue = InReplacedIssue(p, issues) && (!p.def.classic || !seen.Add(p.def));
+                if (badRole || badIssue)
+                    ideo.RemovePrecept(p, replacing: true);
             }
             ideo.memes.RemoveAll(m => m.defName == "VME_BloodCourt");
             foreach (PreceptDef def in DefDatabase<PreceptDef>.AllDefsListForReading)
             {
-                if (!def.classic || ideo.PreceptsListForReading.Any(p => p.def == def))
-                    continue;
-                if ((def.issue != null && issues.Contains(def.issue.defName)) || RemovedRoles.Contains(def.defName))
+                if (def.classic && def.issue != null && issues.Contains(def.issue.defName)
+                    && !ideo.PreceptsListForReading.Any(p => p.def == def))
                     ideo.AddPrecept(PreceptMaker.MakePrecept(def), init: true, null, def.ritualPatternBase);
             }
             foreach (Precept_Role role in ideo.PreceptsListForReading.OfType<Precept_Role>())
             {
-                if (!role.nameLocked)
+                if (!role.nameLocked && !IsErrName(role))
                     continue;
                 role.nameLocked = false;
-                role.RegenerateName();
+                preceptName(role) = role.def.label;
+                labelCapCache(role) = null;
+                role.ClearTipCache();
             }
+            if (ideo.foundation is IdeoFoundation_Deity foundation)
+                deities(foundation)?.Clear();
 
-            ideo.name = UniqueCultureName(ideo);
-            ideo.adjective = null;
-            ideo.memberName = FactionDefOf.PlayerColony.basicMemberKind.label;
-            ideo.leaderTitleMale = null;
-            ideo.leaderTitleFemale = null;
-            Traverse.Create(ideo).Field("overriddenWorshipRoomLabel").SetValue(null);
-            ideo.descriptionLocked = false;
-            ideo.RegenerateDescription(force: true);
-            (ideo.foundation as IdeoFoundation_Deity)?.GenerateDeities();
-            ideo.SetIcon(IdeoFoundation.GetRandomIconDef(ideo), IdeoFoundation.GetRandomColorDef(ideo), clearPrimaryFactionColor: true);
+            if (resetTexts)
+            {
+                ideo.name = UniqueCultureName(ideo);
+                ideo.adjective = null;
+                ideo.memberName = FactionDefOf.PlayerColony.basicMemberKind.label;
+                ideo.leaderTitleMale = null;
+                ideo.leaderTitleFemale = null;
+                Traverse.Create(ideo).Field("overriddenWorshipRoomLabel").SetValue(null);
+                ideo.descriptionLocked = false;
+                ideo.RegenerateDescription(force: true);
+                ideo.SetIcon(IdeoFoundation.GetRandomIconDef(ideo), IdeoFoundation.GetRandomColorDef(ideo), clearPrimaryFactionColor: true);
+            }
             ideo.RecachePrecepts();
             ideo.RecachePossibleBuildings();
             ideo.RecachePossibleRoles();
-            Log.Message($"[LocalCSharpFixes] restored classic ideo '{oldName}' -> '{ideo.name}' (Viltrumites rewrite removed)");
+            Log.Message(resetTexts
+                ? $"[LocalCSharpFixes] restored classic ideo '{oldName}' -> '{ideo.name}' (Viltrumites rewrite removed)"
+                : $"[LocalCSharpFixes] repaired classic ideo '{ideo.name}' (Viltrumites leftovers removed)");
         }
 
         private static string UniqueCultureName(Ideo self)
