@@ -83,6 +83,7 @@ namespace LocalCSharpFixes
             SmoothWallCornerFix.Apply(h);
             SimpleSidearmsFixes.Apply(h);
             ViltrumitesFixes.Apply(h);
+            VoidEventsFixes.Apply(h);
 
             Log.Message("[LocalCSharpFixes] Harmony patches applied.");
         }
