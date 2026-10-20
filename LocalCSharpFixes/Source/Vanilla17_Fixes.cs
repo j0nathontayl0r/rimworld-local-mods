@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using HarmonyLib;
 using RimWorld;
 using Verse;
@@ -24,6 +25,10 @@ namespace LocalCSharpFixes
     public static class Vanilla17Fixes
     {
         private static readonly ConcurrentDictionary<Type, bool> sealedCache = new ConcurrentDictionary<Type, bool>();
+        private static readonly AccessTools.FieldRef<Pawn_RoyaltyTracker, List<RoyalTitle>> royalTitles =
+            AccessTools.FieldRefAccess<Pawn_RoyaltyTracker, List<RoyalTitle>>("titles");
+        private static readonly AccessTools.FieldRef<Pawn_RoyaltyTracker, List<FactionPermit>> factionPermits =
+            AccessTools.FieldRefAccess<Pawn_RoyaltyTracker, List<FactionPermit>>("factionPermits");
 
         public static void Apply(Harmony h)
         {
@@ -51,6 +56,35 @@ namespace LocalCSharpFixes
             {
                 Log.Warning($"[LocalCSharpFixes] failed patching JobDriver_SocialRelax.TryMakePreToilReservations: {e.Message}");
             }
+
+            try
+            {
+                var m = AccessTools.Method(typeof(Pawn_RoyaltyTracker), nameof(Pawn_RoyaltyTracker.ExposeData));
+                h.Patch(m, prefix: new HarmonyMethod(typeof(Vanilla17Fixes), nameof(RoyaltyExposeData_Prefix)));
+            }
+            catch (Exception e)
+            {
+                Log.Warning($"[LocalCSharpFixes] failed patching Pawn_RoyaltyTracker.ExposeData: {e.Message}");
+            }
+        }
+
+        // Vanilla (1.7): FactionManager.Remove takes a temporary faction out of the world, but it
+        // leaves royal titles and permits of that faction on other pawns. On the next load the
+        // faction reference resolves to null. Pawn_RoyaltyTracker.ExposeData (PostLoadInit) drops
+        // titles with a null def, but not titles with a null faction: HasPermit logs "Cannot get
+        // current title for null faction" for each permit, then AssignHeirIfNone throws
+        // ArgumentNullException on heirs.ContainsKey(null). The throw skips UpdateAvailableAbilities
+        // and the error repeats on every load (seen 2026-10-20: a mothballed world pawn kept a
+        // DMS_Brigadier title of the removed Faction_40). Remove those titles and permits before
+        // vanilla's PostLoadInit runs; the next save no longer holds them.
+        public static void RoyaltyExposeData_Prefix(Pawn_RoyaltyTracker __instance)
+        {
+            if (Scribe.mode != LoadSaveMode.PostLoadInit)
+                return;
+            int removed = royalTitles(__instance)?.RemoveAll(t => t != null && t.faction == null) ?? 0;
+            removed += factionPermits(__instance)?.RemoveAll(p => p != null && p.Faction == null) ?? 0;
+            if (removed > 0)
+                Log.Message($"[LocalCSharpFixes] removed {removed} royal title(s)/permit(s) of a removed faction from {__instance.pawn?.LabelShort ?? "a pawn"}");
         }
 
         // Vanilla (1.7): JobDriver_SocialRelax.TryMakePreToilReservations(errorOnFailed) calls
