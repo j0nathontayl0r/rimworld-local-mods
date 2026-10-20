@@ -26,12 +26,40 @@ namespace LocalCSharpFixes
     // Signatures verified against the installed 1.6 DLL:
     //   static IEnumerable<Pawn> VFEEmpire.EmpireUtility.AllColonistsWithTitle()   (returns the cache list)
     //   RoyalTitle RimWorld.Pawn_RoyaltyTracker.GetCurrentTitleInFaction(Faction)  (null when untitled there)
+    //
+    // Second fix: EmpireTitleUtility.RemoveFavor (used by InteractionWorker_RoyalGossip) compares the
+    // title the pawn could be awarded before and after the favor loss:
+    //     if (before != null && before != after && after.seniority < before.seniority)
+    // When the old favor paid for the next title and the new favor doesn't, after is null and the
+    // seniority read throws NRE inside the interaction tick (seen 2026-10-20, pawn Repes). The favor
+    // is already subtracted, but the bestowing ceremony quest is not ended. Replace the method with
+    // the same logic and a null check: with no title awarded any more, end the ceremony quest and
+    // don't generate a new one.
+    // Signatures verified against the installed 1.6 DLL:
+    //   public static void VFEEmpire.EmpireTitleUtility.RemoveFavor(this Pawn_RoyaltyTracker, Faction, int)
+    //   private Dictionary<Faction, int> RimWorld.Pawn_RoyaltyTracker.favor
     public static class VFEEmpireFixes
     {
         private static readonly HashSet<string> reported = new HashSet<string>();
+        private static readonly AccessTools.FieldRef<Pawn_RoyaltyTracker, Dictionary<Faction, int>> favorRef =
+            AccessTools.FieldRefAccess<Pawn_RoyaltyTracker, Dictionary<Faction, int>>("favor");
 
         public static void Apply(Harmony h)
         {
+            try
+            {
+                var u = AccessTools.TypeByName("VFEEmpire.EmpireTitleUtility");
+                var rf = u == null ? null : AccessTools.Method(u, "RemoveFavor", new[] { typeof(Pawn_RoyaltyTracker), typeof(Faction), typeof(int) });
+                if (rf == null)
+                    Log.Message("[LocalCSharpFixes] skip VFE Empire RemoveFavor fix (target not present)");
+                else
+                    h.Patch(rf, prefix: new HarmonyMethod(typeof(VFEEmpireFixes), nameof(RemoveFavor_Prefix)));
+            }
+            catch (Exception e)
+            {
+                Log.Warning($"[LocalCSharpFixes] VFE Empire RemoveFavor fix failed: {e.Message}");
+            }
+
             var t = AccessTools.TypeByName("VFEEmpire.EmpireUtility");
             if (t == null)
             {
@@ -75,6 +103,28 @@ namespace LocalCSharpFixes
             {
                 Log.Warning($"[LocalCSharpFixes] VFE Empire title-holder filter failed: {e.Message}");
             }
+        }
+
+        public static bool RemoveFavor_Prefix(Pawn_RoyaltyTracker royalty, Faction faction, int amount)
+        {
+            if (royalty == null || faction == null || !ModLister.CheckRoyalty("Honor"))
+                return false;
+            int oldFavor = royalty.GetFavor(faction);
+            var favor = favorRef(royalty);
+            if (favor == null)
+                favor = favorRef(royalty) = new Dictionary<Faction, int>();
+            favor.TryGetValue(faction, out int value);
+            value -= amount;
+            favor[faction] = value;
+            RoyalTitleDef before = royalty.GetTitleAwardedWhenUpdating(faction, oldFavor);
+            RoyalTitleDef after = royalty.GetTitleAwardedWhenUpdating(faction, value);
+            if (before != null && before != after && (after == null || after.seniority < before.seniority))
+            {
+                RoyalTitleUtility.EndExistingBestowingCeremonyQuest(royalty.pawn, faction);
+                if (after != null)
+                    RoyalTitleUtility.GenerateBestowingCeremonyQuest(royalty.pawn, faction);
+            }
+            return false;
         }
 
         private static bool HasEmpireTitle(Pawn p, Faction empire)
